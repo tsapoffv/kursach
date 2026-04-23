@@ -11,7 +11,8 @@ PostgreSQL
 python3 -m venv venv
 
 # Активировать
-source venv/bin/activate
+source venv/bin/activate --linux
+venv\Scripts\activate --windows
 
 # Установить зависимости
 pip install -r requirements.txt
