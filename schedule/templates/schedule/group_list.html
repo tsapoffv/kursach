@@ -1,0 +1,155 @@
+{% extends 'schedule/base.html' %}
+{% load schedule_filters %}
+
+{% block title %}Выбор группы{% endblock %}
+
+{% block content %}
+<div class="sidebar">
+    <div class="card">
+        <h3 class="card-title">Поиск преподавателя</h3>
+        <form class="search-form" action="{% url 'schedule:teacher_search' %}" method="get">
+            <div>
+                <label class="form-label" for="teacher-input">Введите ФИО преподавателя</label>
+                <input type="text" 
+                       id="teacher-input" 
+                       name="name" 
+                       class="form-control" 
+                       placeholder="Начните вводить фамилию..."
+                       autocomplete="off">
+                <div class="autocomplete-list" id="autocomplete-list"></div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="card">
+        <h3 class="card-title">Поиск аудитории</h3>
+        <form class="search-form" action="{% url 'schedule:classroom_search' %}" method="get">
+            <div>
+                <label class="form-label" for="classroom-input">Введите номер аудитории</label>
+                <input type="text" 
+                       id="classroom-input" 
+                       name="name" 
+                       class="form-control" 
+                       placeholder="Например: 201, 305а..."
+                       autocomplete="off">
+                <div class="autocomplete-list" id="classroom-autocomplete-list"></div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="card">
+        <h3 class="card-title">Информация</h3>
+        <p style="color: var(--secondary); font-size: 0.9rem;">
+            Выберите группу из списка для просмотра расписания. Также вы можете найти расписание преподавателя или аудитории.
+        </p>
+    </div>
+</div>
+
+<div class="content">
+    <div class="card">
+        <h3 class="card-title">Учебные группы</h3>
+        {% if groups %}
+            <div class="group-list">
+                {% for group in groups %}
+                    <a href="{% url 'schedule:group_schedule' group.pk %}" class="group-item">
+                        {{ group.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Группы еще не добавлены в систему.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+const input = document.getElementById('teacher-input');
+const list = document.getElementById('autocomplete-list');
+
+input.addEventListener('input', async function() {
+    const query = this.value;
+    if (query.length < 2) {
+        list.classList.remove('active');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/teacher-autocomplete/?q=${encodeURIComponent(query)}`);
+        const teachers = await response.json();
+        
+        list.innerHTML = '';
+        teachers.forEach(teacher => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.textContent = teacher;
+            item.addEventListener('click', () => {
+                input.value = teacher;
+                list.classList.remove('active');
+                input.closest('form').submit();
+            });
+            list.appendChild(item);
+        });
+        
+        if (teachers.length > 0) {
+            list.classList.add('active');
+        } else {
+            list.classList.remove('active');
+        }
+    } catch (e) {
+        console.error(e);
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target !== input) {
+        list.classList.remove('active');
+    }
+});
+
+// Classroom autocomplete
+const classroomInput = document.getElementById('classroom-input');
+const classroomList = document.getElementById('classroom-autocomplete-list');
+
+classroomInput.addEventListener('input', async function() {
+    const query = this.value;
+    if (query.length < 1) {
+        classroomList.classList.remove('active');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/classroom-autocomplete/?q=${encodeURIComponent(query)}`);
+        const classrooms = await response.json();
+        
+        classroomList.innerHTML = '';
+        classrooms.forEach(classroom => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.textContent = classroom;
+            item.addEventListener('click', () => {
+                classroomInput.value = classroom;
+                classroomList.classList.remove('active');
+                classroomInput.closest('form').submit();
+            });
+            classroomList.appendChild(item);
+        });
+        
+        if (classrooms.length > 0) {
+            classroomList.classList.add('active');
+        } else {
+            classroomList.classList.remove('active');
+        }
+    } catch (e) {
+        console.error(e);
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target !== classroomInput) {
+        classroomList.classList.remove('active');
+    }
+});
+</script>
+{% endblock %}
