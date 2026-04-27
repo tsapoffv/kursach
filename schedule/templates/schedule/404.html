@@ -1,0 +1,58 @@
+{% extends "schedule/base.html" %}
+
+{% block title %}404 - Страница не найдена{% endblock %}
+
+{% block content %}
+<div class="sidebar">
+    <div class="card">
+        <h3 class="card-title">Поиск преподавателя</h3>
+        <form class="search-form" action="{% url 'schedule:teacher_search' %}" method="get">
+            <div>
+                <label class="form-label" for="teacher-input">Введите ФИО преподавателя</label>
+                <input type="text" 
+                       id="teacher-input" 
+                       name="name" 
+                       class="form-control" 
+                       placeholder="Начните вводить фамилию..."
+                       autocomplete="off">
+                <div class="autocomplete-list" id="autocomplete-list"></div>
+            </div>
+            <button type="submit" class="btn btn-primary">Найти</button>
+        </form>
+    </div>
+    
+    <div class="card">
+        <h3 class="card-title">Поиск аудитории</h3>
+        <form class="search-form" action="{% url 'schedule:classroom_search' %}" method="get">
+            <div>
+                <label class="form-label" for="classroom-input">Введите номер аудитории</label>
+                <input type="text" 
+                       id="classroom-input" 
+                       name="name" 
+                       class="form-control" 
+                       placeholder="Например: 201, 305а..."
+                       autocomplete="off">
+                <div class="autocomplete-list" id="classroom-autocomplete-list"></div>
+            </div>
+            <!-- <button type="submit" class="btn btn-primary">Найти</button> -->
+        </form>
+    </div>
+    
+    <div class="card">
+        <h3 class="card-title">Группа</h3>
+        <p style="font-size: 1.5rem; font-weight: 600; color: var(--primary);">{{ group.name }}</p>
+        <a href="{% url 'schedule:group_list' %}" class="btn" style="color: var(--primary);">← К списку групп</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="empty-state">
+        <h1 style="font-size: 6rem; margin-bottom: 0;">404</h1>
+        <p style="font-size: 1.5rem;">Страница не найдена</p>
+        <p style="margin-top: 1rem;">Извините, запрашиваемая страница не существует или была перемещена.</p>
+        <a href="{% url 'schedule:group_list' %}" class="btn btn-primary" style="margin-top: 1.5rem; display: inline-block;">
+            На главную
+        </a>
+    </div>
+</div>
+{% endblock %}

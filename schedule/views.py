@@ -1,7 +1,12 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseNotFound
 from django.views.generic import ListView, DetailView
 from django.db.models import Q
+from django.shortcuts import render
 from .models import Group, Teacher, Classroom, Subject, Lesson
+
+
+def custom_404(request, exception):
+    return render(request, 'schedule/404.html', status=404)
 
 class GroupListView(ListView):
     """
@@ -70,7 +75,7 @@ class TeacherSearchView(DetailView):
         if not self.object:
             from django.shortcuts import render
             name = self.kwargs.get('teacher_slug', self.request.GET.get('name', ''))
-            return render(request, 'schedule/teacher_not_found.html', {'name': name})
+            return render(request, 'schedule/404.html', {'name': name})
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -125,7 +130,7 @@ class ClassroomSearchView(DetailView):
         if not self.object:
             from django.shortcuts import render
             name = self.kwargs.get('classroom_slug', self.request.GET.get('name', ''))
-            return render(request, 'schedule/classroom_not_found.html', {'name': name})
+            return render(request, 'schedule/404.html', {'name': name})
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):

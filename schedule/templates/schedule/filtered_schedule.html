@@ -70,8 +70,11 @@
                                     <div class="lesson-time">{{ lesson.start_time }}</div>
                                     <div class="lesson-subject">{{ lesson.subject.name }}</div>
                                     <div class="lesson-details">
-                                        {% if lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
-                                        {% if lesson.classroom %} • {{ lesson.classroom.name }}{% endif %}
+                                        <a href="{% url 'schedule:teacher_by_slug' lesson.teacher.slug %}" style="color: var(--primary);">
+                                            {% if lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
+                                        </a>
+                                        {% if lesson.classroom %}
+                                        • <a href="{% url 'schedule:classroom_by_slug' lesson.classroom.slug %}" style="color: var(--primary);">{{ lesson.classroom.name }}</a>{% endif %}
                                         • {{ lesson.get_lesson_type_display }}
                                     </div>
                                 </div>
