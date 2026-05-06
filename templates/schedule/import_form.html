@@ -1,0 +1,15 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Импорт расписания из docx</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Импортировать" class="default">
+    </form>
+    <br>
+    <a href="../">Назад к списку занятий</a>
+</div>
+{% endblock %}

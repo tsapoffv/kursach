@@ -57,15 +57,20 @@
                         <div class="lessons-grid">
                             {% for lesson in lessons %}
                                 <div class="lesson-card">
-                                    <div class="lesson-time">{{ lesson.start_time }}</div>
+                                    <div class="lesson-time">
+                                        {% if lesson.time_slot %}{{ lesson.time_slot.name }}{% else %}{{ lesson.start_time }}{% endif %}
+                                    </div>
                                     <div class="lesson-subject">{{ lesson.subject.name }}</div>
                                     <div class="lesson-details">
+                                        {% if lesson.teacher and lesson.teacher.slug %}
                                         <a href="{% url 'schedule:teacher_by_slug' lesson.teacher.slug %}" style="color: var(--primary);">
-                                            {% if lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
+                                            {{ lesson.teacher.name }}
                                         </a>
-                                        {% if lesson.classroom %}
-                                        • <a href="{% url 'schedule:classroom_by_slug' lesson.classroom.slug %}" style="color: var(--primary);">{{ lesson.classroom.name }}</a>{% endif %}
-                                        • {{ lesson.get_lesson_type_display }}
+                                        {% elif lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
+                                        {% if lesson.classroom and lesson.classroom.slug %}
+                                        • <a href="{% url 'schedule:classroom_by_slug' lesson.classroom.slug %}" style="color: var(--primary);">{{ lesson.classroom.name }}</a>
+                                        {% elif lesson.classroom %}• {{ lesson.classroom.name }}{% endif %}
+                                        {% if lesson.get_lesson_type_display %}• {{ lesson.get_lesson_type_display }}{% endif %}
                                     </div>
                                 </div>
                             {% endfor %}
@@ -92,15 +97,20 @@
                         <div class="lessons-grid">
                             {% for lesson in lessons %}
                                 <div class="lesson-card">
-                                    <div class="lesson-time">{{ lesson.start_time }}</div>
+                                    <div class="lesson-time">
+                                        {% if lesson.time_slot %}{{ lesson.time_slot.name }}{% else %}{{ lesson.start_time }}{% endif %}
+                                    </div>
                                     <div class="lesson-subject">{{ lesson.subject.name }}</div>
                                     <div class="lesson-details">
+                                        {% if lesson.teacher and lesson.teacher.slug %}
                                         <a href="{% url 'schedule:teacher_by_slug' lesson.teacher.slug %}" style="color: var(--primary);">
-                                            {% if lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
+                                            {{ lesson.teacher.name }}
                                         </a>
-                                        {% if lesson.classroom %}
-                                        • <a href="{% url 'schedule:classroom_by_slug' lesson.classroom.slug %}" style="color: var(--primary);">{{ lesson.classroom.name }}</a>{% endif %}
-                                        • {{ lesson.get_lesson_type_display }}
+                                        {% elif lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
+                                        {% if lesson.classroom and lesson.classroom.slug %}
+                                        • <a href="{% url 'schedule:classroom_by_slug' lesson.classroom.slug %}" style="color: var(--primary);">{{ lesson.classroom.name }}</a>
+                                        {% elif lesson.classroom %}• {{ lesson.classroom.name }}{% endif %}
+                                        {% if lesson.get_lesson_type_display %}• {{ lesson.get_lesson_type_display }}{% endif %}
                                     </div>
                                 </div>
                             {% endfor %}

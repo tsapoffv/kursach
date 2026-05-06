@@ -1,7 +1,10 @@
 from django.db import models
+from slugify import slugify
+
 
 class Group(models.Model):
-    name = models.CharField(max_length=100, unique=True, verbose_name="Название группы")
+    name = models.CharField(max_length=100, verbose_name="Название группы")
+    course = models.IntegerField(default=1, verbose_name="Курс")
 
     def __str__(self):
         return self.name
@@ -9,15 +12,33 @@ class Group(models.Model):
     class Meta:
         verbose_name = "Группа"
         verbose_name_plural = "Группы"
+        ordering = ['course', 'name']
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'course'], name='unique_group_per_course')
+        ]
+
+class TimeSlot(models.Model):
+    name = models.CharField(max_length=50, unique=True, verbose_name="Название (напр. 1 пара)")
+    start_time = models.TimeField(verbose_name="Время начала")
+    end_time = models.TimeField(verbose_name="Время окончания")
+
+    def __str__(self):
+        return f"{self.name} ({self.start_time}-{self.end_time})"
+
+    class Meta:
+        verbose_name = "Время занятия"
+        verbose_name_plural = "Время занятий"
+        ordering = ['start_time']
 
 class Teacher(models.Model):
     name = models.CharField(max_length=200, verbose_name="ФИО преподавателя")
     slug = models.SlugField(max_length=200, unique=True, blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        if not self.slug and self.name:
-            from django.utils.text import slugify
-            self.slug = slugify(self.name)
+        if not self.slug:
+            new_slug = slugify(self.name)
+            if new_slug:
+                self.slug = new_slug
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -32,9 +53,10 @@ class Classroom(models.Model):
     slug = models.SlugField(max_length=100, unique=True, blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        if not self.slug and self.name:
-            from django.utils.text import slugify
-            self.slug = slugify(self.name)
+        if not self.slug:
+            new_slug = slugify(self.name)
+            if new_slug:
+                self.slug = new_slug
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -80,9 +102,10 @@ class Lesson(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='lessons', verbose_name="Предмет")
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Преподаватель")
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Аудитория")
+    time_slot = models.ForeignKey(TimeSlot, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Время занятия")
     
     day_of_week = models.IntegerField(choices=DAY_OF_WEEK_CHOICES, verbose_name="День недели")
-    start_time = models.TimeField(verbose_name="Время начала")
+    start_time = models.TimeField(verbose_name="Время начала", blank=True, null=True)
     
     week_type = models.CharField(max_length=4, choices=WEEK_TYPE_CHOICES, verbose_name="Тип недели")
     lesson_type = models.CharField(max_length=3, choices=LESSON_TYPE_CHOICES, verbose_name="Тип занятия")

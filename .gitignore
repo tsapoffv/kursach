@@ -23,3 +23,5 @@ htmlcov/
 *.swo
 *~
 .DS_Store
+TUTORIAL.md
+EXAMPLES.md

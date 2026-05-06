@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import GroupListView, GroupScheduleView, FilteredScheduleView, teacher_autocomplete, TeacherSearchView, ClassroomSearchView, classroom_autocomplete
+from .views import GroupListView, GroupScheduleView, FilteredScheduleView, teacher_autocomplete, TeacherSearchView, ClassroomSearchView, classroom_autocomplete, import_docx
 
 app_name = 'schedule'
 
@@ -16,7 +16,10 @@ urlpatterns = [
     path('teacher/<slug:teacher_slug>/', TeacherSearchView.as_view(), name='teacher_by_slug'),
     path('classroom/<slug:classroom_slug>/', ClassroomSearchView.as_view(), name='classroom_by_slug'),
     
+    
     path('teacher/<int:teacher_pk>/', FilteredScheduleView.as_view(), name='teacher_schedule'),
     path('classroom/<int:classroom_pk>/', FilteredScheduleView.as_view(), name='classroom_schedule'),
     path('subject/<int:subject_pk>/', FilteredScheduleView.as_view(), name='subject_schedule'),
+    
+    path('import/', import_docx, name='import_docx'),
 ]

@@ -1,0 +1,9 @@
+{% extends "admin/app_index.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1>Расписание</h1>
+<a href="lesson/import/" class="button">Импорт расписания</a>
+<hr>
+{{ block.super }}
+{% endblock %}

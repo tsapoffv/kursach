@@ -1,0 +1,13 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div id="content-main">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Импортировать" class="default">
+    </form>
+    <a href="{% url 'admin:schedule_lesson_changelist' %}">Назад</a>
+</div>
+{% endblock %}

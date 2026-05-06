@@ -1,6 +1,6 @@
 {% extends 'schedule/base.html' %}
 {% load schedule_filters %}
-
+ 
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
@@ -41,15 +41,13 @@
                         <div class="lessons-grid">
                             {% for lesson in lessons %}
                                 <div class="lesson-card">
-                                    <div class="lesson-time">{{ lesson.start_time }}</div>
-                                    <div class="lesson-subject">{{ lesson.subject.name }}</div>
+                                    <div class="lesson-time">{{ lesson.time_slot__name|default:lesson.time_slot }}</div>
+                                    <div class="lesson-subject">{{ lesson.subject__name }}</div>
                                     <div class="lesson-details">
-                                        <a href="{% url 'schedule:teacher_by_slug' lesson.teacher.slug %}" style="color: var(--primary);">
-                                            {% if lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
-                                        </a>
-                                        {% if lesson.classroom %}
-                                        • <a href="{% url 'schedule:classroom_by_slug' lesson.classroom.slug %}" style="color: var(--primary);">{{ lesson.classroom.name }}</a>{% endif %}
-                                        • {{ lesson.get_lesson_type_display }}
+                                        {% if lesson.classroom__slug %}
+                                        <a href="{% url 'schedule:classroom_by_slug' lesson.classroom__slug %}" style="color: var(--primary);">{{ lesson.classroom__name }}</a>
+                                        {% elif lesson.classroom__name %}{{ lesson.classroom__name }}{% endif %}
+                                        {% if lesson.lesson_type %}• {{ lesson_type_map|get_item:lesson.lesson_type }}{% endif %}
                                     </div>
                                 </div>
                             {% endfor %}
@@ -67,15 +65,13 @@
                         <div class="lessons-grid">
                             {% for lesson in lessons %}
                                 <div class="lesson-card">
-                                    <div class="lesson-time">{{ lesson.start_time }}</div>
-                                    <div class="lesson-subject">{{ lesson.subject.name }}</div>
+                                    <div class="lesson-time">{{ lesson.time_slot__name|default:lesson.time_slot }}</div>
+                                    <div class="lesson-subject">{{ lesson.subject__name }}</div>
                                     <div class="lesson-details">
-                                        <a href="{% url 'schedule:teacher_by_slug' lesson.teacher.slug %}" style="color: var(--primary);">
-                                            {% if lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
-                                        </a>
-                                        {% if lesson.classroom %}
-                                        • <a href="{% url 'schedule:classroom_by_slug' lesson.classroom.slug %}" style="color: var(--primary);">{{ lesson.classroom.name }}</a>{% endif %}
-                                        • {{ lesson.get_lesson_type_display }}
+                                        {% if lesson.classroom__slug %}
+                                        <a href="{% url 'schedule:classroom_by_slug' lesson.classroom__slug %}" style="color: var(--primary);">{{ lesson.classroom__name }}</a>
+                                        {% elif lesson.classroom__name %}{{ lesson.classroom__name }}{% endif %}
+                                        {% if lesson.lesson_type %}• {{ lesson_type_map|get_item:lesson.lesson_type }}{% endif %}
                                     </div>
                                 </div>
                             {% endfor %}

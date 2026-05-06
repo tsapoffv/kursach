@@ -2,7 +2,10 @@ from django.http import JsonResponse, HttpResponseNotFound
 from django.views.generic import ListView, DetailView
 from django.db.models import Q
 from django.shortcuts import render
+from django.views.decorators.http import require_http_methods
+from django import forms
 from .models import Group, Teacher, Classroom, Subject, Lesson
+from schedule.parser import parse_docx_file
 
 
 def custom_404(request, exception):
@@ -15,6 +18,19 @@ class GroupListView(ListView):
     model = Group
     template_name = 'schedule/group_list.html'
     context_object_name = 'groups'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        groups = context['groups']
+        
+        courses = sorted(set(g.course for g in groups))
+        groups_by_course = {}
+        for course in courses:
+            groups_by_course[course] = groups.filter(course=course)
+        
+        context['courses'] = courses
+        context['groups_by_course'] = groups_by_course
+        return context
 
 
 def teacher_autocomplete(request):
@@ -50,15 +66,14 @@ class TeacherSearchView(DetailView):
     context_object_name = 'teacher'
 
     def get_object(self):
-        # Checking is the a parameter in URL
         if hasattr(self, 'kwargs') and 'teacher_slug' in self.kwargs:
             slug = self.kwargs['teacher_slug']
-            try:
-                return Teacher.objects.get(slug=slug)
-            except Teacher.DoesNotExist:
-                return None
+            if slug:
+                try:
+                    return Teacher.objects.get(slug=slug)
+                except Teacher.DoesNotExist:
+                    return None
         
-        # Or searching by get parameter
         name = self.request.GET.get('name', '').strip()
         if not name:
             return None
@@ -80,11 +95,26 @@ class TeacherSearchView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        lessons = self.object.lessons.all()
+        lessons = self.object.lessons.values(
+            'subject__name', 'time_slot', 'time_slot__name', 
+            'day_of_week', 'week_type', 'lesson_type', 
+            'classroom__name', 'classroom__slug'
+        ).distinct()
         context['title'] = f"Расписание преподавателя: {self.object.name}"
-        context['schedule'] = self._organize_full_schedule(lessons)
+        context['schedule'] = self._organize_teacher_schedule(lessons)
         context['days_of_week'] = dict(Lesson.DAY_OF_WEEK_CHOICES)
+        context['lesson_type_map'] = dict(Lesson.LESSON_TYPE_CHOICES)
         return context
+
+    def _organize_teacher_schedule(self, lessons):
+        schedule = {day: {'A': [], 'B': []} for day, _ in Lesson.DAY_OF_WEEK_CHOICES}
+        for lesson in lessons:
+            week = lesson['week_type']
+            if week in ['A', 'BOTH']:
+                schedule[lesson['day_of_week']]['A'].append(lesson)
+            if week in ['B', 'BOTH']:
+                schedule[lesson['day_of_week']]['B'].append(lesson)
+        return schedule
 
     def _organize_full_schedule(self, lessons):
         schedule = {day: {'A': [], 'B': []} for day, _ in Lesson.DAY_OF_WEEK_CHOICES}
@@ -109,10 +139,11 @@ class ClassroomSearchView(DetailView):
     def get_object(self):
         if hasattr(self, 'kwargs') and 'classroom_slug' in self.kwargs:
             slug = self.kwargs['classroom_slug']
-            try:
-                return Classroom.objects.get(slug=slug)
-            except Classroom.DoesNotExist:
-                return None
+            if slug:
+                try:
+                    return Classroom.objects.get(slug=slug)
+                except Classroom.DoesNotExist:
+                    return None
         
         name = self.request.GET.get('name', '').strip()
         if not name:
@@ -135,20 +166,27 @@ class ClassroomSearchView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        lessons = self.object.lessons.all()
+        lessons = self.object.lessons.values(
+            'subject__name', 'time_slot', 'time_slot__name', 
+            'day_of_week', 'week_type', 'lesson_type', 
+            'classroom__name', 'classroom__slug'
+        ).distinct()
         context['title'] = f"Расписание аудитории: {self.object.name}"
-        context['schedule'] = self._organize_full_schedule(lessons)
+        context['schedule'] = self._organize_teacher_schedule(lessons)
         context['days_of_week'] = dict(Lesson.DAY_OF_WEEK_CHOICES)
+        context['lesson_type_map'] = dict(Lesson.LESSON_TYPE_CHOICES)
         return context
 
-    def _organize_full_schedule(self, lessons):
+    def _organize_teacher_schedule(self, lessons):
         schedule = {day: {'A': [], 'B': []} for day, _ in Lesson.DAY_OF_WEEK_CHOICES}
-        for lesson in lessons.order_by('start_time'):
-            if lesson.week_type in ['A', 'BOTH']:
-                schedule[lesson.day_of_week]['A'].append(lesson)
-            if lesson.week_type in ['B', 'BOTH']:
-                schedule[lesson.day_of_week]['B'].append(lesson)
+        for lesson in lessons:
+            week = lesson['week_type']
+            if week in ['A', 'BOTH']:
+                schedule[lesson['day_of_week']]['A'].append(lesson)
+            if week in ['B', 'BOTH']:
+                schedule[lesson['day_of_week']]['B'].append(lesson)
         return schedule
+
 
 class GroupScheduleView(DetailView):
     """
@@ -227,3 +265,38 @@ class FilteredScheduleView(DetailView):
             if lesson.week_type in ['B', 'BOTH']:
                 schedule[lesson.day_of_week]['B'].append(lesson)
         return schedule
+
+
+class ImportForm(forms.Form):
+    file = forms.FileField(label='Файл docx', widget=forms.ClearableFileInput(attrs={'accept': '.docx'}))
+    clear = forms.BooleanField(label='Очистить расписание перед импортом', required=False)
+
+
+@require_http_methods(["GET", "POST"])
+def import_docx(request):
+    if request.method == 'POST':
+        form = ImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            doc_file = request.FILES['file']
+            clear = form.cleaned_data.get('clear', False)
+
+            try:
+                import io
+                result = parse_docx_file(io.BytesIO(doc_file.read()), clear=clear)
+                return render(request, 'schedule/import.html', {
+                    'form': ImportForm(),
+                    'success': True,
+                    'lessons_count': result['lessons'],
+                    'errors': result['errors']
+                })
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return render(request, 'schedule/import.html', {
+                    'form': form,
+                    'error': str(e)
+                })
+    else:
+        form = ImportForm()
+
+    return render(request, 'schedule/import.html', {'form': form})

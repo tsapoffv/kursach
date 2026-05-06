@@ -47,8 +47,34 @@
 
 <div class="content">
     <div class="card">
-        <h3 class="card-title">Учебные группы</h3>
-        {% if groups %}
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 class="card-title" style="margin: 0;">Учебные группы</h3>
+            {% if courses %}
+            <div class="course-filter">
+                <select id="course-select" class="form-control" onchange="filterByCourse(this.value)" style="width: auto; min-width: 120px;">
+                    {% for course in courses %}
+                    <option value="{{ course }}">{{ course }} курс</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </div>
+        
+        {% if courses %}
+        {% for course in courses %}
+        <div class="course-group" data-course="{{ course }}" {% if not forloop.first %}style="display: none;"{% endif %}>
+            <h4 style="color: var(--primary); margin: 15px 0 10px 0;">{{ course }} курс</h4>
+            <div class="group-list">
+                {% for group in groups_by_course|get_item:course %}
+                    <a href="{% url 'schedule:group_schedule' group.pk %}" class="group-item">
+                        {{ group.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% elif groups %}
             <div class="group-list">
                 {% for group in groups %}
                     <a href="{% url 'schedule:group_schedule' group.pk %}" class="group-item">
@@ -63,6 +89,18 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+function filterByCourse(course) {
+    document.querySelectorAll('.course-group').forEach(group => {
+        if (parseInt(group.dataset.course) === parseInt(course)) {
+            group.style.display = 'block';
+        } else {
+            group.style.display = 'none';
+        }
+    });
+}
+</script>
 
 <script>
 const input = document.getElementById('teacher-input');
