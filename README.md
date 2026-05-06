@@ -1,31 +1,28 @@
-# kursach
+# Система расписаний
 
-# Быстрый запуск (тестовый)
+## Запуск (Docker)
 
-Требования
-Python 3.13+
-PostgreSQL
+```bash
+docker-compose up --build
+```
 
+## Настройка суперпользователя
 
-# Создать виртуальное окружение
-python3 -m venv venv
+В `docker-compose.yml` изменить:
+```yaml
+environment:
+  - DJANGO_SUPERUSER_USERNAME=admin
+  - DJANGO_SUPERUSER_PASSWORD=ваш_пароль
+  - DJANGO_SUPERUSER_EMAIL=admin@example.com
+```
 
-# Активировать
-source venv/bin/activate
+## Импорт расписания
 
-# Установить зависимости
-pip install -r requirements.txt
+1. Войти в админку: `/admin`
+2. Загрузить `.docx` файл с расписанием
+3. Нажать "Импорт из Word"
 
-# Выполнить скипт create_db.sql от имени psql
+## Доступ
 
-# Настройки БД в schedule_project/settings.py
-PASSWORD = 'my_secret_pw'
-
-# Генерация таблиц в бд
-python manage.py migrate
-
-# Делаем мокап бд
-python manage.py populate_db
-
-# Запуск
-python manage.py runserver
+- Сайт: `http://localhost:8000`
+- Админка: `http://localhost:8000/admin`
