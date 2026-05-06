@@ -21,5 +21,4 @@ urlpatterns = [
     path('classroom/<int:classroom_pk>/', FilteredScheduleView.as_view(), name='classroom_schedule'),
     path('subject/<int:subject_pk>/', FilteredScheduleView.as_view(), name='subject_schedule'),
     
-    path('import/', import_docx, name='import_docx'),
 ]
