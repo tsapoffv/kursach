@@ -51,15 +51,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'schedule_project.wsgi.application'
 
 
+import os
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'schedule_db',
-        'USER': 'schedule_user',
-        'PASSWORD': 'my_secret_pw',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.config(default='postgresql://schedule_user:my_secret_pw@localhost:5432/schedule_db')
 }
 
 

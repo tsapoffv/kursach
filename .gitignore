@@ -12,6 +12,7 @@ build/
 *.log
 .env
 .env.local
+*.docx
 *.sqlite3
 db.sqlite3
 staticfiles/
@@ -25,3 +26,4 @@ htmlcov/
 .DS_Store
 TUTORIAL.md
 EXAMPLES.md
+example_output.txt
