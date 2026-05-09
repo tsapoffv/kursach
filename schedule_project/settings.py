@@ -55,7 +55,7 @@ import os
 import dj_database_url
 
 DATABASES = {
-    'default': dj_database_url.config(env='DATABASE_URL', default='postgresql://schedule_user:my_secret_pw@db:5432/schedule_db')
+    'default': dj_database_url.config(env='DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
 
