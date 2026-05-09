@@ -24,6 +24,11 @@ class GroupAdmin(admin.ModelAdmin):
             path('import/', self.admin_site.admin_view(self.import_view), name='schedule_group_import'),
         ] + super().get_urls()
 
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['import_url'] = '/admin/schedule/group/import/'
+        return super().changelist_view(request, extra_context)
+
     def import_view(self, request):
         if request.method == 'POST':
             form = ImportForm(request.POST, request.FILES)
