@@ -44,7 +44,7 @@ def parse_docx(file_path: str, clear: bool = False):
         raise FileNotFoundError(f'Файл не найден: {file_path}')
 
     if clear:
-        _clear_db()
+        Lesson.objects.all().delete()
 
     doc = Document(file_path)
     return _parse_doc(doc)
@@ -53,19 +53,13 @@ def parse_docx(file_path: str, clear: bool = False):
 def parse_docx_file(file_obj, clear: bool = False):
     """Импорт расписания из файлового объекта (для загрузки через веб)"""
     if clear:
-        _clear_db()
+        Lesson.objects.all().delete()
 
     doc = Document(file_obj)
     return _parse_doc(doc)
 
 
-def _clear_db():
-    """Очистка базы данных"""
-    Lesson.objects.all().delete()
-    Group.objects.all().delete()
-    Teacher.objects.all().delete()
-    Classroom.objects.all().delete()
-    Subject.objects.all().delete()
+
 
 
 def _parse_doc(doc: Document) -> dict:
@@ -80,10 +74,10 @@ def _parse_doc(doc: Document) -> dict:
     lessons_created = 0
     errors = []
     current_day = None
-    known_groups = []
-    all_students_lessons = []
-
-    for row in schedule_table.rows:
+    group = None
+    first_row_processed = False
+    
+    for row_idx, row in enumerate(schedule_table.rows):
         cells = row.cells
         if not cells:
             continue
@@ -126,26 +120,19 @@ def _parse_doc(doc: Document) -> dict:
 
         week_type = 'BOTH'
         
-        group_name = _parse_group_name(group_info)
-        if group_name is None:
+        if not first_row_processed:
+            group_name = _parse_group_from_first_row(group_info)
+            if group_name:
+                group = Group.objects.filter(name=group_name, course=course).first()
+                if not group:
+                    errors.append(f'Группа "{group_name}" не найдена в базе данных')
+                    return {'lessons': 0, 'errors': errors}
+            first_row_processed = True
+        
+        if not group:
             continue
         
-        if group_name == 'ALL':
-            all_students_lessons.append({
-                'discipline': discipline,
-                'time_slot': time_slot,
-                'teacher_name': teacher_name,
-                'room_name': room_name,
-                'lesson_type_str': lesson_type_str,
-                'current_day': current_day,
-                'week_type': week_type
-            })
-            continue
-
-        group = Group.objects.filter(name=group_name, course=course).first()
-        if not group:
-            group = Group.objects.create(name=group_name, course=course)
-        known_groups.append(group)
+        subgroup = _parse_subgroup(group_info)
         
         lesson_count = _create_lesson(
             group=group,
@@ -157,32 +144,15 @@ def _parse_doc(doc: Document) -> dict:
             day=current_day,
             week_type=week_type,
             errors=errors,
-            time_str=time_str
+            time_str=time_str,
+            subgroup=subgroup
         )
         lessons_created += lesson_count
-
-    for all_lesson in all_students_lessons:
-        for group in known_groups:
-            if group.course != course:
-                continue
-            lesson_count = _create_lesson(
-                group=group,
-                discipline=all_lesson['discipline'],
-                time_slot=all_lesson['time_slot'],
-                teacher_name=all_lesson['teacher_name'],
-                room_name=all_lesson['room_name'],
-                lesson_type_str=all_lesson['lesson_type_str'],
-                day=all_lesson['current_day'],
-                week_type=all_lesson['week_type'],
-                errors=errors,
-                time_str=""
-            )
-            lessons_created += lesson_count
 
     return {'lessons': lessons_created, 'errors': errors}
 
 
-def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson_type_str, day, week_type, errors, time_str):
+def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson_type_str, day, week_type, errors, time_str, subgroup=0):
     """Создает занятие и возвращает количество созданных (0 или 1)"""
     subject, _ = Subject.objects.get_or_create(name=discipline)
 
@@ -219,7 +189,8 @@ def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson
         subject=subject,
         time_slot=time_slot,
         day_of_week=day,
-        week_type=week_type
+        week_type=week_type,
+        subgroup=subgroup
     ).first()
 
     if existing:
@@ -234,7 +205,8 @@ def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson
             time_slot=time_slot,
             day_of_week=day,
             week_type=week_type,
-            lesson_type=lesson_type
+            lesson_type=lesson_type,
+            subgroup=subgroup
         )
         return 1
     except Exception as e:
@@ -296,6 +268,41 @@ def _parse_group_name(group_info: str) -> str:
         return group_info.split()[0] if group_info.split() else None
     
     return None
+
+
+def _parse_group_from_first_row(group_info: str) -> str:
+    """Парсит номер группы из первой строки (информационный час)"""
+    if not group_info:
+        return None
+    
+    group_info = group_info.replace('\n', ' ').strip()
+    
+    match = re.match(r'(\d+)', group_info)
+    if match:
+        return f"{match.group(1)} группа"
+    
+    if group_info:
+        return group_info.split()[0] if group_info.split() else None
+    
+    return None
+
+
+def _parse_subgroup(group_info: str) -> int:
+    """Парсит подгруппу из строки: 0 - вся группа, 1 - подгруппа 1, 2 - подгруппа 2"""
+    if not group_info:
+        return 0
+    
+    group_lower = group_info.lower()
+    
+    if 'подгруппа 1' in group_lower or 'п/г 1' in group_lower:
+        return 1
+    if 'подгруппа 2' in group_lower or 'п/г 2' in group_lower:
+        return 2
+    
+    if 'english' in group_lower or 'английский' in group_lower:
+        return 1
+    
+    return 0
 
 
 def _clean_teacher_name(teacher_name: str) -> str:

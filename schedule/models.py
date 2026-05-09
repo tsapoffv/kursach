@@ -104,6 +104,8 @@ class Lesson(models.Model):
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Аудитория")
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Время занятия")
     
+    subgroup = models.IntegerField(default=0, verbose_name="Подгруппа", help_text="0 - вся группа, 1 - подгруппа 1, 2 - подгруппа 2")
+    
     day_of_week = models.IntegerField(choices=DAY_OF_WEEK_CHOICES, verbose_name="День недели")
     start_time = models.TimeField(verbose_name="Время начала", blank=True, null=True)
     
