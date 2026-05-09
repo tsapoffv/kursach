@@ -17,17 +17,13 @@ class GroupAdmin(admin.ModelAdmin):
     list_display = ('name', 'course')
     search_fields = ('name',)
     list_filter = ('course',)
+    change_list_template = 'admin/schedule/group_list.html'
 
     def get_urls(self):
         from django.urls import path
         return [
             path('import/', self.admin_site.admin_view(self.import_view), name='schedule_group_import'),
         ] + super().get_urls()
-
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['import_url'] = '/admin/schedule/group/import/'
-        return super().changelist_view(request, extra_context)
 
     def import_view(self, request):
         if request.method == 'POST':
