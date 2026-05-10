@@ -4,190 +4,153 @@
 {% block title %}Выбор группы{% endblock %}
 
 {% block content %}
-<div class="sidebar">
-    <div class="card">
-        <h3 class="card-title">Поиск преподавателя</h3>
-        <form class="search-form" action="{% url 'schedule:teacher_search' %}" method="get">
-            <div>
-                <label class="form-label" for="teacher-input">Введите ФИО преподавателя</label>
-                <input type="text" 
-                       id="teacher-input" 
-                       name="name" 
-                       class="form-control" 
-                       placeholder="Начните вводить фамилию..."
-                       autocomplete="off">
-                <div class="autocomplete-list" id="autocomplete-list"></div>
-            </div>
-        </form>
-    </div>
-    
-    <div class="card">
-        <h3 class="card-title">Поиск аудитории</h3>
-        <form class="search-form" action="{% url 'schedule:classroom_search' %}" method="get">
-            <div>
-                <label class="form-label" for="classroom-input">Введите номер аудитории</label>
-                <input type="text" 
-                       id="classroom-input" 
-                       name="name" 
-                       class="form-control" 
-                       placeholder="Например: 201, 305а..."
-                       autocomplete="off">
-                <div class="autocomplete-list" id="classroom-autocomplete-list"></div>
-            </div>
-        </form>
-    </div>
-    
-    <div class="card">
-        <h3 class="card-title">Информация</h3>
-        <p style="color: var(--secondary); font-size: 0.9rem;">
-            Выберите группу из списка для просмотра расписания. Также вы можете найти расписание преподавателя или аудитории.
-        </p>
-    </div>
-</div>
+<aside class="sidebar" id="sidebar">
 
-<div class="content">
+    <div class="sidebar-panel">
+        <div class="sidebar-panel-header">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="sidebar-panel-title">Преподаватель</span>
+        </div>
+        <div class="sidebar-panel-body">
+            <form class="search-form" action="{% url 'schedule:teacher_search' %}" method="get">
+                <div class="search-wrap">
+                    <svg class="search-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text"
+                           id="teacher-input"
+                           name="name"
+                           class="search-input"
+                           placeholder="Начните вводить фамилию..."
+                           autocomplete="off">
+                    <div class="autocomplete-list" id="autocomplete-list"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="sidebar-panel">
+        <div class="sidebar-panel-header">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="sidebar-panel-title">Аудитория</span>
+        </div>
+        <div class="sidebar-panel-body">
+            <form class="search-form" action="{% url 'schedule:classroom_search' %}" method="get">
+                <div class="search-wrap">
+                    <svg class="search-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text"
+                           id="classroom-input"
+                           name="name"
+                           class="search-input"
+                           placeholder="Например: 201, 305а..."
+                           autocomplete="off">
+                    <div class="autocomplete-list" id="classroom-autocomplete-list"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="sidebar-panel">
+        <div class="sidebar-panel-body">
+            <p class="sidebar-info">Выберите группу для просмотра расписания или воспользуйтесь поиском выше.</p>
+        </div>
+    </div>
+
+</aside>
+
+<main class="content">
+
     <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 class="card-title" style="margin: 0;">Учебные группы</h3>
+        <div class="card-header">
+            <svg style="width:18px;height:18px;stroke:var(--text-2);fill:none;" viewBox="0 0 24 24" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <span class="card-title">Учебные группы</span>
+        </div>
+
+        <div class="card-body">
             {% if courses %}
-            <div class="course-filter">
-                <select id="course-select" class="form-control" onchange="filterByCourse(this.value)" style="width: auto; min-width: 120px;">
+                <div class="course-tabs" id="course-tabs">
                     {% for course in courses %}
-                    <option value="{{ course }}">{{ course }} курс</option>
+                    <button class="course-tab {% if forloop.first %}active{% endif %}"
+                            onclick="filterByCourse({{ course }}, this)">
+                        {{ course }} курс
+                    </button>
                     {% endfor %}
-                </select>
-            </div>
+                </div>
+
+                {% for course in courses %}
+                <div class="course-group" data-course="{{ course }}" {% if not forloop.first %}style="display:none"{% endif %}>
+                    <div class="group-grid">
+                        {% for group in groups_by_course|get_item:course %}
+                            <a href="{% url 'schedule:group_schedule' group.pk %}" class="group-item">
+                                {{ group.name }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+            {% elif groups %}
+                <div class="group-grid">
+                    {% for group in groups %}
+                        <a href="{% url 'schedule:group_schedule' group.pk %}" class="group-item">
+                            {{ group.name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-lessons">
+                    <svg style="width:40px;height:40px;stroke:var(--text-3);fill:none;margin-bottom:0.75rem;" viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <p>Группы ещё не добавлены в систему.</p>
+                </div>
             {% endif %}
         </div>
-        
-        {% if courses %}
-        {% for course in courses %}
-        <div class="course-group" data-course="{{ course }}" {% if not forloop.first %}style="display: none;"{% endif %}>
-            <h4 style="color: var(--primary); margin: 15px 0 10px 0;">{{ course }} курс</h4>
-            <div class="group-list">
-                {% for group in groups_by_course|get_item:course %}
-                    <a href="{% url 'schedule:group_schedule' group.pk %}" class="group-item">
-                        {{ group.name }}
-                    </a>
-                {% endfor %}
-            </div>
-        </div>
-        {% endfor %}
-        
-        {% elif groups %}
-            <div class="group-list">
-                {% for group in groups %}
-                    <a href="{% url 'schedule:group_schedule' group.pk %}" class="group-item">
-                        {{ group.name }}
-                    </a>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="empty-state">
-                <p>Группы еще не добавлены в систему.</p>
-            </div>
-        {% endif %}
     </div>
-</div>
+
+</main>
 
 <script>
-function filterByCourse(course) {
-    document.querySelectorAll('.course-group').forEach(group => {
-        if (parseInt(group.dataset.course) === parseInt(course)) {
-            group.style.display = 'block';
-        } else {
-            group.style.display = 'none';
+function filterByCourse(course, btn) {
+    document.querySelectorAll('.course-group').forEach(g => {
+        g.style.display = parseInt(g.dataset.course) === course ? 'block' : 'none';
+    });
+    document.querySelectorAll('.course-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+function setupAutocomplete(inputId, listId, apiUrl) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    if (!input || !list) return;
+
+    input.addEventListener('input', async function() {
+        const q = this.value;
+        if (q.length < (inputId.includes('classroom') ? 1 : 2)) {
+            list.classList.remove('active');
+            return;
         }
+        try {
+            const res = await fetch(`${apiUrl}?q=${encodeURIComponent(q)}`);
+            const items = await res.json();
+            list.innerHTML = '';
+            items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'autocomplete-item';
+                el.textContent = item;
+                el.addEventListener('click', () => {
+                    input.value = item;
+                    list.classList.remove('active');
+                    input.closest('form').submit();
+                });
+                list.appendChild(el);
+            });
+            list.classList.toggle('active', items.length > 0);
+        } catch(e) { console.error(e); }
+    });
+
+    document.addEventListener('click', e => {
+        if (e.target !== input) list.classList.remove('active');
     });
 }
-</script>
 
-<script>
-const input = document.getElementById('teacher-input');
-const list = document.getElementById('autocomplete-list');
-
-input.addEventListener('input', async function() {
-    const query = this.value;
-    if (query.length < 2) {
-        list.classList.remove('active');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/api/teacher-autocomplete/?q=${encodeURIComponent(query)}`);
-        const teachers = await response.json();
-        
-        list.innerHTML = '';
-        teachers.forEach(teacher => {
-            const item = document.createElement('div');
-            item.className = 'autocomplete-item';
-            item.textContent = teacher;
-            item.addEventListener('click', () => {
-                input.value = teacher;
-                list.classList.remove('active');
-                input.closest('form').submit();
-            });
-            list.appendChild(item);
-        });
-        
-        if (teachers.length > 0) {
-            list.classList.add('active');
-        } else {
-            list.classList.remove('active');
-        }
-    } catch (e) {
-        console.error(e);
-    }
-});
-
-document.addEventListener('click', function(e) {
-    if (e.target !== input) {
-        list.classList.remove('active');
-    }
-});
-
-// Classroom autocomplete
-const classroomInput = document.getElementById('classroom-input');
-const classroomList = document.getElementById('classroom-autocomplete-list');
-
-classroomInput.addEventListener('input', async function() {
-    const query = this.value;
-    if (query.length < 1) {
-        classroomList.classList.remove('active');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/api/classroom-autocomplete/?q=${encodeURIComponent(query)}`);
-        const classrooms = await response.json();
-        
-        classroomList.innerHTML = '';
-        classrooms.forEach(classroom => {
-            const item = document.createElement('div');
-            item.className = 'autocomplete-item';
-            item.textContent = classroom;
-            item.addEventListener('click', () => {
-                classroomInput.value = classroom;
-                classroomList.classList.remove('active');
-                classroomInput.closest('form').submit();
-            });
-            classroomList.appendChild(item);
-        });
-        
-        if (classrooms.length > 0) {
-            classroomList.classList.add('active');
-        } else {
-            classroomList.classList.remove('active');
-        }
-    } catch (e) {
-        console.error(e);
-    }
-});
-
-document.addEventListener('click', function(e) {
-    if (e.target !== classroomInput) {
-        classroomList.classList.remove('active');
-    }
-});
+setupAutocomplete('teacher-input', 'autocomplete-list', '/api/teacher-autocomplete/');
+setupAutocomplete('classroom-input', 'classroom-autocomplete-list', '/api/classroom-autocomplete/');
 </script>
 {% endblock %}

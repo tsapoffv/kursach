@@ -3,13 +3,18 @@ from django.shortcuts import render
 from django import forms
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from .models import Group, Teacher, Classroom, Subject, Lesson
+from .models import Group, Teacher, Classroom, Subject, Lesson, GroupDenomination
 from .parser import parse_docx_file
 
 
 class ImportForm(forms.Form):
+    group = forms.ModelChoiceField(
+        queryset=Group.objects.all(),
+        label='Группа',
+        required=True
+    )
     file = forms.FileField(label='Файл docx', widget=forms.ClearableFileInput(attrs={'accept': '.docx'}))
-    clear = forms.BooleanField(label='Очистить занятия группы перед импортом', required=False)
+    clear = forms.BooleanField(label='Очистить занятия перед импортом', required=False)
 
 
 @admin.register(Group)
@@ -31,12 +36,13 @@ class GroupAdmin(admin.ModelAdmin):
             if form.is_valid():
                 doc_file = request.FILES['file']
                 clear = form.cleaned_data.get('clear', False)
+                group = form.cleaned_data.get('group')
                 import io
-                result = parse_docx_file(io.BytesIO(doc_file.read()), clear=clear)
+                result = parse_docx_file(io.BytesIO(doc_file.read()), clear=clear, group=group)
                 if result['errors']:
                     for error in result['errors']:
                         self.message_user(request, error, level='ERROR')
-                self.message_user(request, f'Импортировано {result["lessons"]} занятий')
+                self.message_user(request, f'Импортировано {result["lessons"]} занятий для группы {group.name}')
                 return HttpResponseRedirect(request.path)
         else:
             form = ImportForm()
@@ -62,9 +68,15 @@ class SubjectAdmin(admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
 
+@admin.register(GroupDenomination)
+class GroupDenominationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'type')
+    list_filter = ('type',)
+    search_fields = ('name',)
+
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ('subject', 'group', 'teacher', 'classroom', 'day_of_week', 'start_time', 'week_type', 'subgroup')
-    list_filter = ('group', 'teacher', 'classroom', 'day_of_week', 'week_type', 'subgroup')
+    list_display = ('subject', 'group', 'teacher', 'classroom', 'day_of_week', 'start_time', 'week_type', 'denomination')
+    list_filter = ('group', 'teacher', 'classroom', 'day_of_week', 'week_type', 'denomination')
     search_fields = ('subject__name', 'teacher__name', 'group__name')
     autocomplete_fields = ['group', 'teacher', 'classroom', 'subject']

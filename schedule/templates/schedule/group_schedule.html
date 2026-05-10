@@ -4,256 +4,200 @@
 {% block title %}Расписание группы {{ group.name }}{% endblock %}
 
 {% block content %}
-<div class="sidebar">
-    <div class="card">
-        <h3 class="card-title">Поиск преподавателя</h3>
-        <form class="search-form" action="{% url 'schedule:teacher_search' %}" method="get">
-            <div>
-                <label class="form-label" for="teacher-input">Введите ФИО преподавателя</label>
-                <input type="text" 
-                       id="teacher-input" 
-                       name="name" 
-                       class="form-control" 
-                       placeholder="Начните вводить фамилию..."
-                       autocomplete="off">
-                <div class="autocomplete-list" id="autocomplete-list"></div>
-            </div>
-            {% comment %} <button type="submit" class="btn btn-primary">Найти</button> {% endcomment %}
-        </form>
-    </div>
-    
-    <div class="card">
-        <h3 class="card-title">Поиск аудитории</h3>
-        <form class="search-form" action="{% url 'schedule:classroom_search' %}" method="get">
-            <div>
-                <label class="form-label" for="classroom-input">Введите номер аудитории</label>
-                <input type="text" 
-                       id="classroom-input" 
-                       name="name" 
-                       class="form-control" 
-                       placeholder="Например: 201, 305а..."
-                       autocomplete="off">
-                <div class="autocomplete-list" id="classroom-autocomplete-list"></div>
-            </div>
-            <!-- <button type="submit" class="btn btn-primary">Найти</button> -->
-        </form>
-    </div>
-    
-    <div class="card">
-        <h3 class="card-title">Группа</h3>
-        <p style="font-size: 1.5rem; font-weight: 600; color: var(--primary);">{{ group.name }}</p>
-        <a href="{% url 'schedule:group_list' %}" class="btn" style="color: var(--primary);">← К списку групп</a>
-    </div>
-</div>
+<aside class="sidebar" id="sidebar">
 
-<div class="content">
+    <div class="sidebar-panel">
+        <div class="sidebar-panel-header">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="sidebar-panel-title">Преподаватель</span>
+        </div>
+        <div class="sidebar-panel-body">
+            <form class="search-form" action="{% url 'schedule:teacher_search' %}" method="get">
+                <div class="search-wrap">
+                    <svg class="search-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text"
+                           id="teacher-input"
+                           name="name"
+                           class="search-input"
+                           placeholder="Начните вводить фамилию..."
+                           autocomplete="off">
+                    <div class="autocomplete-list" id="autocomplete-list"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="sidebar-panel">
+        <div class="sidebar-panel-header">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="sidebar-panel-title">Аудитория</span>
+        </div>
+        <div class="sidebar-panel-body">
+            <form class="search-form" action="{% url 'schedule:classroom_search' %}" method="get">
+                <div class="search-wrap">
+                    <svg class="search-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text"
+                           id="classroom-input"
+                           name="name"
+                           class="search-input"
+                           placeholder="Например: 201, 305а..."
+                           autocomplete="off">
+                    <div class="autocomplete-list" id="classroom-autocomplete-list"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="sidebar-panel">
+        <div class="sidebar-panel-body">
+            <p class="sidebar-info">
+                <strong>{{ group.name }}</strong>
+                Расписание учебной группы
+            </p>
+            <a href="{% url 'schedule:group_list' %}" class="back-link">
+                <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                К списку групп
+            </a>
+        </div>
+    </div>
+
+</aside>
+
+<main class="content">
+
+    <!-- Неделя А -->
     <div class="card">
-        <h3 class="card-title">Неделя А (четн.)</h3>
-        {% for day_num, day_name in days_of_week.items %}
-            {% with week_a_schedule|get_item:day_num as lessons %}
-                {% if lessons %}
+        <div class="card-header">
+            <span class="card-header-badge badge-a">А</span>
+            <span class="card-title">Чётная неделя</span>
+        </div>
+        <div class="card-body">
+            {% for day_num, day_name in days_of_week.items %}
+                {% with week_a_schedule|get_item:day_num as lessons %}
+                    {% if lessons %}
                     <div class="day-section">
-                        <h4 style="color: var(--primary); margin-top: 1.5rem;">{{ day_name }}</h4>
+                        <div class="day-label">{{ day_name }}</div>
                         <div class="lessons-grid">
                             {% for lesson in lessons %}
-                                <div class="lesson-card">
-                                    <div class="lesson-time">
-                                        {% if lesson.time_slot %}{{ lesson.time_slot.name }}{% else %}{{ lesson.start_time }}{% endif %}
-                                    </div>
-                                    <div class="lesson-subject">{{ lesson.subject.name }}</div>
-                                    <div class="lesson-details">
-                                        {% if lesson.teacher and lesson.teacher.slug %}
-                                        <a href="{% url 'schedule:teacher_by_slug' lesson.teacher.slug %}" style="color: var(--primary);">
-                                            {{ lesson.teacher.name }}
-                                        </a>
-                                        {% elif lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
-                                        {% if lesson.classroom and lesson.classroom.slug %}
-                                        • <a href="{% url 'schedule:classroom_by_slug' lesson.classroom.slug %}" style="color: var(--primary);">{{ lesson.classroom.name }}</a>
-                                        {% elif lesson.classroom %}• {{ lesson.classroom.name }}{% endif %}
-                                        {% if lesson.get_lesson_type_display %}• {{ lesson.get_lesson_type_display }}{% endif %}
-                                    </div>
+                            <div class="lesson-card">
+                                <div class="lesson-time">
+                                    {% if lesson.time_slot %}{{ lesson.time_slot.name }}{% else %}{{ lesson.start_time }}{% endif %}
                                 </div>
+                                <div class="lesson-subject">{{ lesson.subject.name }}</div>
+                                {% if lesson.denomination %}
+                                    <span class="lesson-tag">{{ lesson.denomination.name }}</span>
+                                {% endif %}
+                                <div class="lesson-meta">
+                                    {% if lesson.teacher and lesson.teacher.slug %}
+                                        <a href="{% url 'schedule:teacher_by_slug' lesson.teacher.slug %}" >{{ lesson.teacher.name }}</a>
+                                    {% elif lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
+                                    {% if lesson.classroom and lesson.classroom.slug %}
+                                        <span>·</span>
+                                        <a href="{% url 'schedule:classroom_by_slug' lesson.classroom.slug %}" >{{ lesson.classroom.name }}</a>
+                                    {% elif lesson.classroom %}<span>· {{ lesson.classroom.name }}</span>{% endif %}
+                                    {% if lesson.get_lesson_type_display %}<span>· {{ lesson.get_lesson_type_display }}</span>{% endif %}
+                                </div>
+                            </div>
                             {% endfor %}
                         </div>
                     </div>
+                    {% endif %}
+                {% endwith %}
+            {% endfor %}
+
+            {% with week_a_schedule|get_item:1 as day_check %}
+                {% if not day_check %}
+                    <div class="empty-lessons">Занятий на чётной неделе нет</div>
                 {% endif %}
             {% endwith %}
-        {% endfor %}
-        
-        {% with week_a_schedule|get_item:1 as day_lessons %}
-            {% if not day_lessons %}
-                <p class="empty-state">Занятий на этой неделе нет</p>
-            {% endif %}
-        {% endwith %}
+        </div>
     </div>
-    
+
+    <!-- Неделя Б -->
     <div class="card">
-        <h3 class="card-title">Неделя Б (неч.)</h3>
-        {% for day_num, day_name in days_of_week.items %}
-            {% with week_b_schedule|get_item:day_num as lessons %}
-                {% if lessons %}
+        <div class="card-header">
+            <span class="card-header-badge badge-b">Б</span>
+            <span class="card-title">Нечётная неделя</span>
+        </div>
+        <div class="card-body">
+            {% for day_num, day_name in days_of_week.items %}
+                {% with week_b_schedule|get_item:day_num as lessons %}
+                    {% if lessons %}
                     <div class="day-section">
-                        <h4 style="color: var(--primary); margin-top: 1.5rem;">{{ day_name }}</h4>
+                        <div class="day-label">{{ day_name }}</div>
                         <div class="lessons-grid">
                             {% for lesson in lessons %}
-                                <div class="lesson-card">
-                                    <div class="lesson-time">
-                                        {% if lesson.time_slot %}{{ lesson.time_slot.name }}{% else %}{{ lesson.start_time }}{% endif %}
-                                    </div>
-                                    <div class="lesson-subject">{{ lesson.subject.name }}</div>
-                                    <div class="lesson-details">
-                                        {% if lesson.teacher and lesson.teacher.slug %}
-                                        <a href="{% url 'schedule:teacher_by_slug' lesson.teacher.slug %}" style="color: var(--primary);">
-                                            {{ lesson.teacher.name }}
-                                        </a>
-                                        {% elif lesson.teacher %}{{ lesson.teacher.name }}{% endif %}
-                                        {% if lesson.classroom and lesson.classroom.slug %}
-                                        • <a href="{% url 'schedule:classroom_by_slug' lesson.classroom.slug %}" style="color: var(--primary);">{{ lesson.classroom.name }}</a>
-                                        {% elif lesson.classroom %}• {{ lesson.classroom.name }}{% endif %}
-                                        {% if lesson.get_lesson_type_display %}• {{ lesson.get_lesson_type_display }}{% endif %}
-                                    </div>
+                            <div class="lesson-card">
+                                <div class="lesson-time">
+                                    {% if lesson.time_slot %}{{ lesson.time_slot.name }}{% else %}{{ lesson.start_time }}{% endif %}
                                 </div>
+                                <div class="lesson-subject">{{ lesson.subject.name }}</div>
+                                <div class="lesson-groups-list">
+                                    {% for rel in lesson.related_lessons %}
+                                        {% if rel.denomination %}
+                                            <span class="lesson-tag">{{ rel.denomination.name }}</span>
+                                        {% endif %}
+                                        <div class="lesson-meta">
+                                            {% if rel.teacher and rel.teacher.slug %}
+                                                <a href="{% url 'schedule:teacher_by_slug' rel.teacher.slug %}">{{ rel.teacher.name }}</a>
+                                            {% elif rel.teacher %}{{ rel.teacher.name }}{% endif %}
+                                            {% if rel.classroom and rel.classroom.slug %}
+                                                <span>·</span>
+                                                <a href="{% url 'schedule:classroom_by_slug' rel.classroom.slug %}" >{{ rel.classroom.name }}</a>
+                                            {% elif rel.classroom %}<span>· {{ rel.classroom.name }}</span>{% endif %}
+                                            {% if rel.get_lesson_type_display %}<span>· {{ rel.get_lesson_type_display }}</span>{% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
                             {% endfor %}
                         </div>
                     </div>
-                {% endif %}
-            {% endwith %}
-        {% endfor %}
-        
-        {% with week_b_schedule|get_item:1 as day_lessons %}
-            {% if not day_lessons %}
-                <p class="empty-state">Занятий на этой неделе нет</p>
-            {% endif %}
-        {% endwith %}
+                    {% endif %}
+                {% endwith %}
+            {% endfor %}
+        </div>
     </div>
-</div>
 
-<style>
-.lessons-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1rem;
-    margin-top: 0.5rem;
-}
-
-.lesson-card {
-    background: #f7fafc;
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--primary-light);
-    border-radius: 8px;
-    padding: 1rem;
-}
-
-.lesson-time {
-    font-weight: 700;
-    color: var(--primary);
-    font-size: 1.1rem;
-}
-
-.lesson-subject {
-    font-weight: 600;
-    margin: 0.5rem 0;
-    color: #2d3748;
-}
-
-.lesson-details {
-    font-size: 0.85rem;
-    color: var(--secondary);
-}
-
-.day-section:first-child h4 {
-    margin-top: 0;
-}
-</style>
+</main>
 
 <script>
-const input = document.getElementById('teacher-input');
-const list = document.getElementById('autocomplete-list');
+function setupAutocomplete(inputId, listId, apiUrl) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+    if (!input || !list) return;
 
-input.addEventListener('input', async function() {
-    const query = this.value;
-    if (query.length < 2) {
-        list.classList.remove('active');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/api/teacher-autocomplete/?q=${encodeURIComponent(query)}`);
-        const teachers = await response.json();
-        
-        list.innerHTML = '';
-        teachers.forEach(teacher => {
-            const item = document.createElement('div');
-            item.className = 'autocomplete-item';
-            item.textContent = teacher;
-            item.addEventListener('click', () => {
-                input.value = teacher;
-                list.classList.remove('active');
-                input.closest('form').submit();
-            });
-            list.appendChild(item);
-        });
-        
-        if (teachers.length > 0) {
-            list.classList.add('active');
-        } else {
+    input.addEventListener('input', async function() {
+        const q = this.value;
+        if (q.length < (inputId.includes('classroom') ? 1 : 2)) {
             list.classList.remove('active');
-        }
-    } catch (e) {
-        console.error(e);
-    }
-});
-
-document.addEventListener('click', function(e) {
-    if (e.target !== input) {
-        list.classList.remove('active');
-    }
-});
-
-// Classroom autocomplete
-const classroomInput = document.getElementById('classroom-input');
-const classroomList = document.getElementById('classroom-autocomplete-list');
-
-if (classroomInput) {
-    classroomInput.addEventListener('input', async function() {
-        const query = this.value;
-        if (query.length < 1) {
-            classroomList.classList.remove('active');
             return;
         }
-        
         try {
-            const response = await fetch(`/api/classroom-autocomplete/?q=${encodeURIComponent(query)}`);
-            const classrooms = await response.json();
-            
-            classroomList.innerHTML = '';
-            classrooms.forEach(classroom => {
-                const item = document.createElement('div');
-                item.className = 'autocomplete-item';
-                item.textContent = classroom;
-                item.addEventListener('click', () => {
-                    classroomInput.value = classroom;
-                    classroomList.classList.remove('active');
-                    classroomInput.closest('form').submit();
+            const res = await fetch(`${apiUrl}?q=${encodeURIComponent(q)}`);
+            const items = await res.json();
+            list.innerHTML = '';
+            items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'autocomplete-item';
+                el.textContent = item;
+                el.addEventListener('click', () => {
+                    input.value = item;
+                    list.classList.remove('active');
+                    input.closest('form').submit();
                 });
-                classroomList.appendChild(item);
+                list.appendChild(el);
             });
-            
-            if (classrooms.length > 0) {
-                classroomList.classList.add('active');
-            } else {
-                classroomList.classList.remove('active');
-            }
-        } catch (e) {
-            console.error(e);
-        }
+            list.classList.toggle('active', items.length > 0);
+        } catch(e) { console.error(e); }
     });
 
-    document.addEventListener('click', function(e) {
-        if (e.target !== classroomInput) {
-            classroomList.classList.remove('active');
-        }
+    document.addEventListener('click', e => {
+        if (e.target !== input) list.classList.remove('active');
     });
 }
+
+setupAutocomplete('teacher-input', 'autocomplete-list', '/api/teacher-autocomplete/');
+setupAutocomplete('classroom-input', 'classroom-autocomplete-list', '/api/classroom-autocomplete/');
 </script>
 {% endblock %}

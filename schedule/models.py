@@ -2,6 +2,23 @@ from django.db import models
 from slugify import slugify
 
 
+class GroupDenomination(models.Model):
+    TYPE_CHOICES = [
+        ('GROUP', 'Группа'),
+        ('SUBGROUP', 'Подгруппа'),
+    ]
+    
+    name = models.CharField(max_length=100, verbose_name="Название")
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Тип")
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_type_display()})"
+    
+    class Meta:
+        verbose_name = "Вид группы"
+        verbose_name_plural = "Виды групп"
+
+
 class Group(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название группы")
     course = models.IntegerField(default=1, verbose_name="Курс")
@@ -104,7 +121,7 @@ class Lesson(models.Model):
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Аудитория")
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Время занятия")
     
-    subgroup = models.IntegerField(default=0, verbose_name="Подгруппа", help_text="0 - вся группа, 1 - подгруппа 1, 2 - подгруппа 2")
+    denomination = models.ForeignKey(GroupDenomination, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Вид группы")
     
     day_of_week = models.IntegerField(choices=DAY_OF_WEEK_CHOICES, verbose_name="День недели")
     start_time = models.TimeField(verbose_name="Время начала", blank=True, null=True)

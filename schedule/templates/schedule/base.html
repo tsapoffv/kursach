@@ -3,264 +3,577 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Система расписаний{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>{% block title %}Расписание{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #2c5282;
-            --primary-light: #4299e1;
-            --secondary: #718096;
-            --accent: #ed8936;
-            --bg-light: #f7fafc;
-            --card-bg: #ffffff;
+            --primary: #0f172a;
+            --primary-mid: #1e3a5f;
+            --accent: #3b82f6;
+            --accent-soft: #eff6ff;
+            --accent-glow: rgba(59,130,246,0.15);
+            --surface: #ffffff;
+            --surface-2: #f8fafc;
+            --surface-3: #f1f5f9;
             --border: #e2e8f0;
+            --border-soft: #f1f5f9;
+            --text: #0f172a;
+            --text-2: #475569;
+            --text-3: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --sidebar-w: 300px;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
         }
-        
-        * {
-            box-sizing: border-box;
-        }
-        
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 0;
-            background-color: var(--bg-light);
-            color: #2d3748;
+            font-family: 'Onest', -apple-system, sans-serif;
+            background: var(--surface-2);
+            color: var(--text);
             min-height: 100vh;
+            line-height: 1.6;
         }
-        
+
+        /* ── NAVBAR ── */
         .navbar {
-            background: linear-gradient(135deg, var(--primary) 0%, #1a365d 100%);
-            padding: 0.75rem 2rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background: var(--primary);
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 200;
+            box-shadow: 0 1px 0 rgba(255,255,255,0.06);
         }
-        
-        .navbar-content {
-            max-width: 1600px;
+
+        .navbar-inner {
+            max-width: 1560px;
+            width: 100%;
             margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 1rem;
         }
-        
+
         .navbar-brand {
-            color: #fff;
-            text-decoration: none;
-            font-size: 1.4rem;
-            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            transition: color 0.2s;
-        }
-        
-        .navbar-brand:hover {
-            color: var(--accent);
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 1.5rem;
-        }
-        
-        .nav-link {
-            color: rgba(255,255,255,0.85);
+            gap: 0.6rem;
             text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-        
-        .nav-link:hover {
             color: #fff;
-            background: rgba(255,255,255,0.1);
-        }
-        
-        .nav-link.active {
-            color: #fff;
-            background: rgba(255,255,255,0.15);
-        }
-        
-        .main-wrapper {
-            display: flex;
-            max-width: 1600px;
-            margin: 2rem auto;
-            padding: 0 1.5rem;
-            gap: 2rem;
-        }
-        
-        .sidebar {
-            width: 320px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
             flex-shrink: 0;
         }
-        
-        .content {
-            flex: 1;
-            min-width: 0;
+
+        .navbar-brand-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            border: 1px solid var(--border);
+
+        .navbar-brand-icon svg { width: 18px; height: 18px; stroke: #fff; fill: none; }
+
+        .navbar-brand span { opacity: 0.9; }
+
+        /* hamburger */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            color: #fff;
+        }
+
+        .menu-toggle svg { width: 22px; height: 22px; }
+
+        /* ── LAYOUT ── */
+        .layout {
+            display: flex;
+            max-width: 1560px;
+            margin: 0 auto;
             padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            gap: 1.5rem;
+            align-items: flex-start;
         }
-        
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid var(--primary-light);
-        }
-        
-        .search-form {
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: var(--sidebar-w);
+            flex-shrink: 0;
+            position: sticky;
+            top: 76px;
             display: flex;
             flex-direction: column;
             gap: 1rem;
         }
-        
-        .form-label {
-            font-weight: 500;
-            color: #4a5568;
-            margin-bottom: 0.25rem;
+
+        .sidebar-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
         }
-        
-        .form-control {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
+
+        .sidebar-panel-header {
+            padding: 0.9rem 1.1rem;
+            border-bottom: 1px solid var(--border-soft);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+
+        .sidebar-panel-header svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--accent);
+            fill: none;
+            flex-shrink: 0;
         }
-        
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
+
+        .sidebar-panel-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-2);
         }
-        
-        .btn-primary {
-            background: var(--primary);
-            color: #fff;
+
+        .sidebar-panel-body {
+            padding: 1rem 1.1rem;
         }
-        
-        .btn-primary:hover {
-            background: #1a365d;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        .autocomplete-list {
-            border: 2px solid var(--border);
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            max-height: 200px;
-            overflow-y: auto;
-            background: #fff;
-            display: none;
-            position: absolute;
-            z-index: 1000;
-            width: calc(100% - 4rem);
-        }
-        
-        .autocomplete-list.active {
-            display: block;
-        }
-        
-        .search-form {
+
+        /* search input */
+        .search-wrap {
             position: relative;
         }
-        
+
+        .search-input {
+            width: 100%;
+            padding: 0.6rem 0.9rem 0.6rem 2.4rem;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: var(--text);
+            background: var(--surface-2);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: #fff;
+        }
+
+        .search-input::placeholder { color: var(--text-3); }
+
+        .search-icon {
+            position: absolute;
+            left: 0.7rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 15px;
+            height: 15px;
+            stroke: var(--text-3);
+            fill: none;
+            pointer-events: none;
+        }
+
+        /* autocomplete */
+        .autocomplete-list {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border: 1.5px solid var(--accent);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            z-index: 300;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .autocomplete-list.active { display: block; }
+
         .autocomplete-item {
-            padding: 0.75rem 1rem;
+            padding: 0.6rem 0.9rem;
+            font-size: 0.88rem;
             cursor: pointer;
+            transition: background 0.12s;
+        }
+
+        .autocomplete-item:hover { background: var(--accent-soft); color: var(--accent); }
+
+        /* info block */
+        .sidebar-info {
+            font-size: 0.85rem;
+            color: var(--text-2);
+            line-height: 1.5;
+        }
+
+        .sidebar-info strong {
+            display: block;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 0.75rem;
+            padding: 0.45rem 0.75rem;
+            border-radius: 6px;
             transition: background 0.15s;
         }
-        
-        .autocomplete-item:hover {
-            background: var(--bg-light);
+
+        .back-link:hover { background: var(--accent-soft); }
+        .back-link svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
+
+        /* ── MAIN CONTENT ── */
+        .content { flex: 1; min-width: 0; }
+
+        /* ── CARD ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.25rem;
+            overflow: hidden;
         }
-        
-        h1 {
-            font-size: 2rem;
-            color: var(--primary);
-            margin-bottom: 1.5rem;
+
+        .card-header {
+            padding: 1rem 1.4rem;
+            border-bottom: 1px solid var(--border-soft);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: linear-gradient(to right, var(--surface), var(--surface-2));
         }
-        
-        .group-list {
+
+        .card-header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .badge-a {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .badge-b {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .card-body { padding: 1.25rem 1.4rem; }
+
+        /* ── DAY SECTION ── */
+        .day-section { margin-bottom: 1.5rem; }
+        .day-section:last-child { margin-bottom: 0; }
+
+        .day-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-3);
+            margin-bottom: 0.65rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .day-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── LESSON GRID ── */
+        .lessons-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 0.75rem;
         }
-        
+
+        .lesson-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.85rem 1rem;
+            border-left: 3px solid var(--accent);
+            transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
+            cursor: default;
+        }
+
+        .lesson-card:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+            border-left-color: var(--primary-mid);
+        }
+
+        .lesson-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--accent);
+            margin-bottom: 0.35rem;
+        }
+
+        .lesson-subject {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.35;
+            margin-bottom: 0.4rem;
+        }
+
+        .lesson-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            background: var(--accent-soft);
+            color: var(--accent);
+            border-radius: 4px;
+            font-weight: 500;
+            margin-bottom: 0.45rem;
+        }
+
+        .lesson-meta {
+            font-size: 0.8rem;
+            color: var(--text-2);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.2rem 0.5rem;
+            align-items: center;
+            line-height: 1.4;
+        }
+
+        .lesson-meta a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .lesson-meta a:hover { text-decoration: underline; }
+
+        .lesson-groups-list {
+            border-top: 1px solid var(--border);
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .empty-lessons {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-3);
+            font-size: 0.88rem;
+        }
+
+        /* ── GROUP LIST ── */
+        .group-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.6rem;
+        }
+
         .group-item {
             display: block;
-            padding: 1rem 1.25rem;
-            background: var(--card-bg);
-            border: 2px solid var(--border);
-            border-radius: 8px;
+            padding: 0.7rem 0.9rem;
+            background: var(--surface-2);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
             text-decoration: none;
-            color: var(--primary);
+            color: var(--text);
+            font-size: 0.9rem;
             font-weight: 500;
-            transition: all 0.2s;
+            transition: all 0.15s;
         }
-        
-        .group-item:hover {
+
+.group-item:hover {
             border-color: var(--primary-light);
             background: #ebf8ff;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: var(--secondary);
+
+        /* ── COURSE TABS ── */
+        .course-tabs {
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.25rem;
         }
-        
-        .icon {
-            display: inline-block;
-            width: 1.5em;
-            height: 1.5em;
+
+        .course-tab {
+            padding: 0.38rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: var(--text-2);
+            transition: all 0.15s;
+        }
+
+        .course-tab:hover { border-color: var(--accent); color: var(--accent); }
+        .course-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        /* ── WEEK SECTION in filtered ── */
+        .week-block {
+            margin-bottom: 0.75rem;
+        }
+
+        .week-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-3);
+            margin-bottom: 0.5rem;
+        }
+
+        /* ── OVERLAY (mobile sidebar) ── */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 150;
+            backdrop-filter: blur(2px);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+            .layout { padding: 1rem; gap: 0; }
+
+            .sidebar {
+                position: fixed;
+                top: 60px;
+                left: 0;
+                bottom: 0;
+                width: 290px;
+                max-width: 85vw;
+                overflow-y: auto;
+                z-index: 180;
+                background: var(--surface-2);
+                padding: 1rem;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+                box-shadow: var(--shadow-lg);
+            }
+
+            .sidebar.open { transform: translateX(0); }
+            .sidebar-overlay.open { display: block; }
+            .menu-toggle { display: flex; align-items: center; }
+        }
+
+        @media (max-width: 600px) {
+            .lessons-grid { grid-template-columns: 1fr; }
+            .group-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+            .navbar { padding: 0 1rem; }
+            .layout { padding: 0.75rem; }
+            .card-body { padding: 1rem; }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="navbar-content">
-            <a href="{% url 'schedule:group_list' %}" class="navbar-brand">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
+
+<nav class="navbar">
+    <div class="navbar-inner">
+        <a href="{% url 'schedule:group_list' %}" class="navbar-brand">
+            <div class="navbar-brand-icon">
+                <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
-                Расписание
-            </a>
-        </div>
-    </nav>
-    
-    <div class="main-wrapper">
-        {% block content %}{% endblock %}
+            </div>
+            <span>Расписание</span>
+        </a>
+        <button class="menu-toggle" id="menu-toggle" aria-label="Открыть меню">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+        </button>
     </div>
+</nav>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="layout">
+    {% block content %}{% endblock %}
+</div>
+
+<script>
+const toggle = document.getElementById('menu-toggle');
+const overlay = document.getElementById('sidebar-overlay');
+const sidebar = document.querySelector('.sidebar');
+
+function openSidebar() {
+    sidebar?.classList.add('open');
+    overlay?.classList.add('open');
+}
+function closeSidebar() {
+    sidebar?.classList.remove('open');
+    overlay?.classList.remove('open');
+}
+
+toggle?.addEventListener('click', () => {
+    if (sidebar?.classList.contains('open')) closeSidebar();
+    else openSidebar();
+});
+overlay?.addEventListener('click', closeSidebar);
+</script>
+
 </body>
 </html>

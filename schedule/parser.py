@@ -3,7 +3,7 @@ import re
 from docx import Document
 from datetime import time
 from slugify import slugify
-from schedule.models import Group, Teacher, Classroom, Subject, Lesson, TimeSlot
+from schedule.models import Group, Teacher, Classroom, Subject, Lesson, TimeSlot, GroupDenomination
 
 
 DAYS_ORDER = ['ПОНЕДЕЛЬНИК', 'ВТОРНИК', 'СРЕДА', 'ЧЕТВЕРГ', 'ПЯТНИЦА', 'СУББОТА']
@@ -38,44 +38,43 @@ def find_schedule_table(doc: Document):
     return doc.tables[0] if doc.tables else None
 
 
-def parse_docx(file_path: str, clear: bool = False):
+def parse_docx(file_path: str, clear: bool = False, group=None):
     """Импорт расписания из docx файла по указанному пути"""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f'Файл не найден: {file_path}')
 
-    if clear:
-        Lesson.objects.all().delete()
+    if clear and group:
+        Lesson.objects.filter(group=group).delete()
 
     doc = Document(file_path)
-    return _parse_doc(doc)
+    return _parse_doc(doc, group=group)
 
 
-def parse_docx_file(file_obj, clear: bool = False):
+def parse_docx_file(file_obj, clear: bool = False, group=None):
     """Импорт расписания из файлового объекта (для загрузки через веб)"""
-    if clear:
-        Lesson.objects.all().delete()
+    if clear and group:
+        Lesson.objects.filter(group=group).delete()
 
     doc = Document(file_obj)
-    return _parse_doc(doc)
+    return _parse_doc(doc, group=group)
 
 
 
 
 
-def _parse_doc(doc: Document) -> dict:
+def _parse_doc(doc: Document, group=None) -> dict:
     """Парсит документ docx"""
     schedule_table = find_schedule_table(doc)
     
     if not schedule_table:
         return {'lessons': 0, 'errors': ['Таблица с расписанием не найдена']}
 
-    course = extract_course_from_doc(doc)
+    if not group:
+        return {'lessons': 0, 'errors': ['Группа не выбрана']}
     
     lessons_created = 0
     errors = []
     current_day = None
-    group = None
-    first_row_processed = False
     
     for row_idx, row in enumerate(schedule_table.rows):
         cells = row.cells
@@ -120,19 +119,17 @@ def _parse_doc(doc: Document) -> dict:
 
         week_type = 'BOTH'
         
-        if not first_row_processed:
-            group_name = _parse_group_from_first_row(group_info)
-            if group_name:
-                group = Group.objects.filter(name=group_name, course=course).first()
-                if not group:
-                    errors.append(f'Группа "{group_name}" не найдена в базе данных')
-                    return {'lessons': 0, 'errors': errors}
-            first_row_processed = True
+        # Извлекаем номер группы из названия (например "1 группа" -> 1)
+        group_num = 0
+        match = re.search(r'(\d+)', group.name)
+        if match:
+            group_num = int(match.group(1))
         
-        if not group:
-            continue
+        denomination = _parse_denomination(group_info, group.name, group_num)
         
-        subgroup = _parse_subgroup(group_info)
+        if denomination is None and group_info.strip():
+            # Если есть текст но denomination = None (например число = номер группы) - это "вся группа", добавляем
+            pass
         
         lesson_count = _create_lesson(
             group=group,
@@ -145,14 +142,14 @@ def _parse_doc(doc: Document) -> dict:
             week_type=week_type,
             errors=errors,
             time_str=time_str,
-            subgroup=subgroup
+            denomination=denomination
         )
         lessons_created += lesson_count
 
     return {'lessons': lessons_created, 'errors': errors}
 
 
-def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson_type_str, day, week_type, errors, time_str, subgroup=0):
+def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson_type_str, day, week_type, errors, time_str, denomination=None):
     """Создает занятие и возвращает количество созданных (0 или 1)"""
     subject, _ = Subject.objects.get_or_create(name=discipline)
 
@@ -190,7 +187,7 @@ def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson
         time_slot=time_slot,
         day_of_week=day,
         week_type=week_type,
-        subgroup=subgroup
+        denomination=denomination
     ).first()
 
     if existing:
@@ -206,7 +203,7 @@ def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson
             day_of_week=day,
             week_type=week_type,
             lesson_type=lesson_type,
-            subgroup=subgroup
+            denomination=denomination
         )
         return 1
     except Exception as e:
@@ -287,22 +284,60 @@ def _parse_group_from_first_row(group_info: str) -> str:
     return None
 
 
-def _parse_subgroup(group_info: str) -> int:
-    """Парсит подгруппу из строки: 0 - вся группа, 1 - подгруппа 1, 2 - подгруппа 2"""
+def _parse_denomination(group_info: str, group_name: str, group_num: int) -> GroupDenomination | None:
+    """Парсит вид группы из третьей колонки
+    
+    Правила:
+    - Число = номер группы -> вся группа (None)
+    - Число != номер группы -> смотрим слово после числа:
+      - "подгруппа" -> подгруппа
+      - "группа" -> группа  
+      - другое -> подгруппа
+    """
     if not group_info:
-        return 0
+        return None
     
-    group_lower = group_info.lower()
+    info = group_info.strip().lower()
+    if not info:
+        return None
     
-    if 'подгруппа 1' in group_lower or 'п/г 1' in group_lower:
-        return 1
-    if 'подгруппа 2' in group_lower or 'п/г 2' in group_lower:
-        return 2
+    # Ищем число и слово после него
+    match = re.search(r'(\d+)\s*(\w+)', info)
+    if not match:
+        return None
     
-    if 'english' in group_lower or 'английский' in group_lower:
-        return 1
+    number = int(match.group(1))
+    word_after_number = match.group(2)
     
-    return 0
+    # Число = номер группы -> вся группа
+    if number == group_num:
+        return None
+    
+    # Определяем тип по слову после числа
+    if 'подгруппа' in word_after_number or 'п' in word_after_number[:1]:
+        # Подгруппа
+        denom, _ = GroupDenomination.objects.get_or_create(
+            name=f"Подгруппа {number}",
+            type='SUBGROUP',
+            defaults={'name': f"Подгруппа {number}", 'type': 'SUBGROUP'}
+        )
+        return denom
+    elif 'группа' in word_after_number or 'г' in word_after_number[:1]:
+        # Группа
+        denom, _ = GroupDenomination.objects.get_or_create(
+            name=f"Группа {number}",
+            type='GROUP',
+            defaults={'name': f"Группа {number}", 'type': 'GROUP'}
+        )
+        return denom
+    else:
+        # По умолчанию подгруппа
+        denom, _ = GroupDenomination.objects.get_or_create(
+            name=f"Подгруппа {number}",
+            type='SUBGROUP',
+            defaults={'name': f"Подгруппа {number}", 'type': 'SUBGROUP'}
+        )
+        return denom
 
 
 def _clean_teacher_name(teacher_name: str) -> str:
