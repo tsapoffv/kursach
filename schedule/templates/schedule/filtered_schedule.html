@@ -76,7 +76,7 @@
                                         <span>·</span>
                                         <a href="{% url 'schedule:classroom_by_slug' lesson.classroom__slug %}" >{{ lesson.classroom__name }}</a>
                                     {% elif lesson.classroom__name %}<span>· {{ lesson.classroom__name }}</span>{% endif %}
-                                    {% if lesson.lesson_type %}<span>· {{ lesson_type_map|get_item:lesson.lesson_type }}</span>{% endif %}
+                                    {% if lesson.lesson_type__code %}<span>· {{ lesson_type_map|get_item:lesson.lesson_type__code }}</span>{% endif %}
                                 </div>
                             </div>
                             {% endfor %}
@@ -109,7 +109,7 @@
                                         <span>·</span>
                                         <a href="{% url 'schedule:classroom_by_slug' lesson.classroom__slug %}" >{{ lesson.classroom__name }}</a>
                                     {% elif lesson.classroom__name %}<span>· {{ lesson.classroom__name }}</span>{% endif %}
-                                    {% if lesson.lesson_type %}<span>· {{ lesson_type_map|get_item:lesson.lesson_type }}</span>{% endif %}
+                                    {% if lesson.lesson_type__code %}<span>· {{ lesson_type_map|get_item:lesson.lesson_type__code }}</span>{% endif %}
                                 </div>
                             </div>
                             {% endfor %}

@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
 from django import forms
-from .models import Group, Teacher, Classroom, Subject, Lesson
+from .models import Group, Teacher, Classroom, Subject, Lesson, DayOfWeek, WeekType, LessonType
 from schedule.parser import parse_docx_file
 
 
@@ -97,25 +97,26 @@ class TeacherSearchView(DetailView):
         context = super().get_context_data(**kwargs)
         lessons = self.object.lessons.values(
             'subject__name', 'time_slot', 'time_slot__name', 
-            'day_of_week', 'week_type', 'lesson_type', 
+            'day_id', 'week_type__code', 'lesson_type__code', 
             'classroom__name', 'classroom__slug',
             'teacher__name', 'teacher__slug',
             'denomination__name'
         ).distinct()
         context['title'] = f"Расписание преподавателя: {self.object.name}"
         context['schedule'] = self._organize_teacher_schedule(lessons)
-        context['days_of_week'] = dict(Lesson.DAY_OF_WEEK_CHOICES)
-        context['lesson_type_map'] = dict(Lesson.LESSON_TYPE_CHOICES)
+        context['days_of_week'] = {d.number: d.name for d in DayOfWeek.objects.all()}
+        context['lesson_type_map'] = {lt.code: lt.name for lt in LessonType.objects.all()}
         return context
 
     def _organize_teacher_schedule(self, lessons):
-        schedule = {day: {'A': [], 'B': []} for day, _ in Lesson.DAY_OF_WEEK_CHOICES}
+        days = {d.number: d for d in DayOfWeek.objects.all()}
+        schedule = {day: {'A': [], 'B': []} for day in days}
         for lesson in lessons:
-            week = lesson['week_type']
+            week = lesson['week_type__code']
             if week in ['A', 'BOTH']:
-                schedule[lesson['day_of_week']]['A'].append(lesson)
+                schedule[lesson['day_id']]['A'].append(lesson)
             if week in ['B', 'BOTH']:
-                schedule[lesson['day_of_week']]['B'].append(lesson)
+                schedule[lesson['day_id']]['B'].append(lesson)
         return schedule
 
     def _organize_full_schedule(self, lessons):
@@ -170,25 +171,26 @@ class ClassroomSearchView(DetailView):
         context = super().get_context_data(**kwargs)
         lessons = self.object.lessons.values(
             'subject__name', 'time_slot', 'time_slot__name', 
-            'day_of_week', 'week_type', 'lesson_type', 
+            'day_id', 'week_type__code', 'lesson_type__code', 
             'classroom__name', 'classroom__slug',
             'teacher__name', 'teacher__slug',
             'denomination__name'
         ).distinct()
         context['title'] = f"Расписание аудитории: {self.object.name}"
         context['schedule'] = self._organize_teacher_schedule(lessons)
-        context['days_of_week'] = dict(Lesson.DAY_OF_WEEK_CHOICES)
-        context['lesson_type_map'] = dict(Lesson.LESSON_TYPE_CHOICES)
+        context['days_of_week'] = {d.number: d.name for d in DayOfWeek.objects.all()}
+        context['lesson_type_map'] = {lt.code: lt.name for lt in LessonType.objects.all()}
         return context
 
     def _organize_teacher_schedule(self, lessons):
-        schedule = {day: {'A': [], 'B': []} for day, _ in Lesson.DAY_OF_WEEK_CHOICES}
+        days = {d.number: d for d in DayOfWeek.objects.all()}
+        schedule = {day: {'A': [], 'B': []} for day in days}
         for lesson in lessons:
-            week = lesson['week_type']
+            week = lesson['week_type__code']
             if week in ['A', 'BOTH']:
-                schedule[lesson['day_of_week']]['A'].append(lesson)
+                schedule[lesson['day_id']]['A'].append(lesson)
             if week in ['B', 'BOTH']:
-                schedule[lesson['day_of_week']]['B'].append(lesson)
+                schedule[lesson['day_id']]['B'].append(lesson)
         return schedule
 
 
@@ -205,32 +207,33 @@ class GroupScheduleView(DetailView):
         group = self.get_object()
 
         # Получаем и организуем занятия для каждой недели
-        week_a_lessons = group.lessons.filter(week_type__in=['A', 'BOTH'])
-        week_b_lessons = group.lessons.filter(week_type__in=['B', 'BOTH'])
+        week_a_lessons = group.lessons.filter(week_type__code__in=['A', 'BOTH'])
+        week_b_lessons = group.lessons.filter(week_type__code__in=['B', 'BOTH'])
 
         context['week_a_schedule'] = self._organize_schedule_by_day(week_a_lessons)
         context['week_b_schedule'] = self._organize_schedule_by_day(week_b_lessons)
-        context['days_of_week'] = dict(Lesson.DAY_OF_WEEK_CHOICES)
+        context['days_of_week'] = {d.number: d.name for d in DayOfWeek.objects.all()}
         return context
 
     def _organize_schedule_by_day(self, lessons):
         """ Группирует занятия по дням недели, объединяя одинаковые предметы. """
         from collections import defaultdict
         
-        schedule = {day: [] for day, _ in Lesson.DAY_OF_WEEK_CHOICES}
+        days_dict = {d.number: d for d in DayOfWeek.objects.all()}
+        schedule = {day: [] for day in days_dict}
         
         # Группируем по (time_slot, subject, day) - объединяем одинаковые предметы
         grouped = defaultdict(list)
         for lesson in lessons.order_by('time_slot__start_time', 'subject__name', 'denomination__name'):
-            key = (lesson.time_slot_id, lesson.subject_id, lesson.day_of_week, lesson.week_type)
+            key = (lesson.time_slot_id, lesson.subject_id, lesson.day_id, lesson.week_type_id)
             grouped[key].append(lesson)
         
         # Создаём структуру для шаблона
         for day in schedule:
-            day_lessons = [lessons[0] for lessons in grouped.values() if lessons[0].day_of_week == day]
+            day_lessons = [lessons[0] for lessons in grouped.values() if lessons[0].day_id == day]
             # Добавляем все связанные занятия (подгруппы/группы) к каждому предмету
             for lesson in day_lessons:
-                key = (lesson.time_slot_id, lesson.subject_id, lesson.day_of_week, lesson.week_type)
+                key = (lesson.time_slot_id, lesson.subject_id, lesson.day_id, lesson.week_type_id)
                 lesson.related_lessons = grouped[key]
             schedule[day] = day_lessons
         

@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django import forms
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from .models import Group, Teacher, Classroom, Subject, Lesson, GroupDenomination
+from .models import Group, Teacher, Classroom, Subject, Lesson, GroupDenomination, GroupDenominationType, WeekType, LessonType, DayOfWeek
 from .parser import parse_docx_file
 
 
@@ -68,6 +68,27 @@ class SubjectAdmin(admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
 
+@admin.register(GroupDenominationType)
+class GroupDenominationTypeAdmin(admin.ModelAdmin):
+    list_display = ('code', 'name')
+    search_fields = ('name',)
+
+@admin.register(WeekType)
+class WeekTypeAdmin(admin.ModelAdmin):
+    list_display = ('code', 'name')
+    search_fields = ('name',)
+
+@admin.register(LessonType)
+class LessonTypeAdmin(admin.ModelAdmin):
+    list_display = ('code', 'name')
+    search_fields = ('name',)
+
+@admin.register(DayOfWeek)
+class DayOfWeekAdmin(admin.ModelAdmin):
+    list_display = ('number', 'name')
+    ordering = ['number']
+    search_fields = ('name',)
+
 @admin.register(GroupDenomination)
 class GroupDenominationAdmin(admin.ModelAdmin):
     list_display = ('name', 'type')
@@ -76,7 +97,7 @@ class GroupDenominationAdmin(admin.ModelAdmin):
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ('subject', 'group', 'teacher', 'classroom', 'day_of_week', 'start_time', 'week_type', 'denomination')
-    list_filter = ('group', 'teacher', 'classroom', 'day_of_week', 'week_type', 'denomination')
+    list_display = ('subject', 'group', 'teacher', 'classroom', 'day', 'start_time', 'week_type', 'lesson_type', 'denomination')
+    list_filter = ('group', 'teacher', 'classroom', 'day', 'week_type', 'lesson_type', 'denomination')
     search_fields = ('subject__name', 'teacher__name', 'group__name')
-    autocomplete_fields = ['group', 'teacher', 'classroom', 'subject']
+    autocomplete_fields = ['group', 'teacher', 'classroom', 'subject', 'day', 'week_type', 'lesson_type', 'denomination']

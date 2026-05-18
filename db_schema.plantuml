@@ -1,0 +1,108 @@
+@startuml
+
+skinparam backgroundColor #f7fafc
+skinparam componentStyle rectangle
+
+' Entities
+entity Group {
+  * id: INTEGER (PK)
+  --
+  * name: VARCHAR(100)
+  * course: INTEGER
+  --
+  UNIQUE(name, course)
+}
+
+entity GroupDenominationType {
+  * id: INTEGER (PK)
+  --
+  * code: VARCHAR(20) UNIQUE
+  * name: VARCHAR(50)
+}
+
+entity GroupDenomination {
+  * id: INTEGER (PK)
+  --
+  * name: VARCHAR(100)
+  * type_id: INTEGER (FK)
+  --
+  UNIQUE(name, type)
+}
+
+entity WeekType {
+  * id: INTEGER (PK)
+  --
+  * code: VARCHAR(10) UNIQUE
+  * name: VARCHAR(50)
+}
+
+entity LessonType {
+  * id: INTEGER (PK)
+  --
+  * code: VARCHAR(10) UNIQUE
+  * name: VARCHAR(50)
+}
+
+entity DayOfWeek {
+  * id: INTEGER (PK)
+  --
+  * number: INTEGER UNIQUE
+  * name: VARCHAR(20)
+}
+
+entity TimeSlot {
+  * id: INTEGER (PK)
+  --
+  * name: VARCHAR(50) UNIQUE
+  * start_time: TIME
+  * end_time: TIME
+}
+
+entity Teacher {
+  * id: INTEGER (PK)
+  --
+  * name: VARCHAR(200)
+  * slug: VARCHAR(200) UNIQUE
+}
+
+entity Classroom {
+  * id: INTEGER (PK)
+  --
+  * name: VARCHAR(100)
+  * slug: VARCHAR(100) UNIQUE
+}
+
+entity Subject {
+  * id: INTEGER (PK)
+  --
+  * name: VARCHAR(200)
+}
+
+entity Lesson {
+  * id: INTEGER (PK)
+  --
+  * group_id: INTEGER (FK)
+  * subject_id: INTEGER (FK)
+  * teacher_id: INTEGER (FK, nullable)
+  * classroom_id: INTEGER (FK, nullable)
+  * time_slot_id: INTEGER (FK, nullable)
+  * day_id: INTEGER (FK)
+  * week_type_id: INTEGER (FK)
+  * lesson_type_id: INTEGER (FK)
+  * denomination_id: INTEGER (FK, nullable)
+  * start_time: TIME (nullable)
+}
+
+' Relationships
+Group ||--o{ Lesson : has
+Subject ||--o{ Lesson : contains
+Teacher ||--o{ Lesson : teaches
+Classroom ||--o{ Lesson : located
+TimeSlot ||--o{ Lesson : scheduled
+DayOfWeek ||--o{ Lesson : day
+WeekType ||--o{ Lesson : week
+LessonType ||--o{ Lesson : type
+GroupDenominationType ||--o{ GroupDenomination : type
+GroupDenomination ||--o{ Lesson : applies
+
+@enduml

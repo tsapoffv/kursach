@@ -2,29 +2,70 @@ from django.db import models
 from slugify import slugify
 
 
-class GroupDenomination(models.Model):
-    TYPE_CHOICES = [
-        ('GROUP', 'Группа'),
-        ('SUBGROUP', 'Подгруппа'),
-    ]
+class WeekType(models.Model):
+    code = models.CharField(max_length=10, unique=True, verbose_name="Код")
+    name = models.CharField(max_length=50, verbose_name="Название")
     
-    name = models.CharField(max_length=100, verbose_name="Название")
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Тип")
+    class Meta:
+        verbose_name = "Тип недели"
+        verbose_name_plural = "Типы недель"
     
     def __str__(self):
-        return f"{self.name} ({self.get_type_display()})"
+        return self.name
+
+
+class LessonType(models.Model):
+    code = models.CharField(max_length=10, unique=True, verbose_name="Код")
+    name = models.CharField(max_length=50, verbose_name="Название")
+    
+    class Meta:
+        verbose_name = "Тип занятия"
+        verbose_name_plural = "Типы занятий"
+    
+    def __str__(self):
+        return self.name
+
+
+class DayOfWeek(models.Model):
+    number = models.IntegerField(unique=True, verbose_name="Номер")
+    name = models.CharField(max_length=20, verbose_name="Название")
+    
+    class Meta:
+        verbose_name = "День недели"
+        verbose_name_plural = "Дни недели"
+        ordering = ['number']
+    
+    def __str__(self):
+        return self.name
+
+
+class GroupDenominationType(models.Model):
+    code = models.CharField(max_length=20, unique=True, verbose_name="Код")
+    name = models.CharField(max_length=50, verbose_name="Название")
+    
+    class Meta:
+        verbose_name = "Тип группы"
+        verbose_name_plural = "Типы групп"
+    
+    def __str__(self):
+        return self.name
+
+
+class GroupDenomination(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Название")
+    type = models.ForeignKey(GroupDenominationType, on_delete=models.PROTECT, verbose_name="Тип")
     
     class Meta:
         verbose_name = "Вид группы"
         verbose_name_plural = "Виды групп"
+    
+    def __str__(self):
+        return f"{self.name} ({self.type.name})"
 
 
 class Group(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название группы")
     course = models.IntegerField(default=1, verbose_name="Курс")
-
-    def __str__(self):
-        return self.name
 
     class Meta:
         verbose_name = "Группа"
@@ -34,18 +75,23 @@ class Group(models.Model):
             models.UniqueConstraint(fields=['name', 'course'], name='unique_group_per_course')
         ]
 
+    def __str__(self):
+        return self.name
+
+
 class TimeSlot(models.Model):
-    name = models.CharField(max_length=50, unique=True, verbose_name="Название (напр. 1 пара)")
+    name = models.CharField(max_length=50, unique=True, verbose_name="Название")
     start_time = models.TimeField(verbose_name="Время начала")
     end_time = models.TimeField(verbose_name="Время окончания")
-
-    def __str__(self):
-        return f"{self.name} ({self.start_time}-{self.end_time})"
 
     class Meta:
         verbose_name = "Время занятия"
         verbose_name_plural = "Время занятий"
         ordering = ['start_time']
+
+    def __str__(self):
+        return f"{self.name} ({self.start_time}-{self.end_time})"
+
 
 class Teacher(models.Model):
     name = models.CharField(max_length=200, verbose_name="ФИО преподавателя")
@@ -58,12 +104,13 @@ class Teacher(models.Model):
                 self.slug = new_slug
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return self.name
-
     class Meta:
         verbose_name = "Преподаватель"
         verbose_name_plural = "Преподаватели"
+
+    def __str__(self):
+        return self.name
+
 
 class Classroom(models.Model):
     name = models.CharField(max_length=100, verbose_name="Номер аудитории")
@@ -76,63 +123,43 @@ class Classroom(models.Model):
                 self.slug = new_slug
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return self.name
-
     class Meta:
         verbose_name = "Аудитория"
         verbose_name_plural = "Аудитории"
 
-class Subject(models.Model):
-    name = models.CharField(max_length=200, verbose_name="Название предмета")
-
     def __str__(self):
         return self.name
+
+
+class Subject(models.Model):
+    name = models.CharField(max_length=200, verbose_name="Название предмета")
 
     class Meta:
         verbose_name = "Предмет"
         verbose_name_plural = "Предметы"
 
+    def __str__(self):
+        return self.name
+
+
 class Lesson(models.Model):
-    WEEK_TYPE_CHOICES = [
-        ('A', 'Неделя А (четн.)'),
-        ('B', 'Неделя Б (неч.)'),
-        ('BOTH', 'Обе недели'),
-    ]
-    
-    LESSON_TYPE_CHOICES = [
-        ('LEC', 'Лекция'),
-        ('PRA', 'Практика'),
-        ('LAB', 'Лабораторная'),
-    ]
-
-    DAY_OF_WEEK_CHOICES = [
-        (1, 'Понедельник'),
-        (2, 'Вторник'),
-        (3, 'Среда'),
-        (4, 'Четверг'),
-        (5, 'Пятница'),
-        (6, 'Суббота'),
-    ]
-
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='lessons', verbose_name="Группа")
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='lessons', verbose_name="Предмет")
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Преподаватель")
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Аудитория")
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Время занятия")
     
+    day = models.ForeignKey(DayOfWeek, on_delete=models.PROTECT, verbose_name="День недели", default=1)
+    week_type = models.ForeignKey(WeekType, on_delete=models.PROTECT, verbose_name="Тип недели")
+    lesson_type = models.ForeignKey(LessonType, on_delete=models.PROTECT, verbose_name="Тип занятия")
     denomination = models.ForeignKey(GroupDenomination, on_delete=models.SET_NULL, null=True, blank=True, related_name='lessons', verbose_name="Вид группы")
     
-    day_of_week = models.IntegerField(choices=DAY_OF_WEEK_CHOICES, verbose_name="День недели")
     start_time = models.TimeField(verbose_name="Время начала", blank=True, null=True)
-    
-    week_type = models.CharField(max_length=4, choices=WEEK_TYPE_CHOICES, verbose_name="Тип недели")
-    lesson_type = models.CharField(max_length=3, choices=LESSON_TYPE_CHOICES, verbose_name="Тип занятия")
-
-    def __str__(self):
-        return f"{self.subject} для {self.group} в {self.get_day_of_week_display()} {self.start_time}"
 
     class Meta:
         verbose_name = "Занятие"
         verbose_name_plural = "Занятия"
-        ordering = ['day_of_week', 'start_time']
+        ordering = ['day__number', 'start_time']
+
+    def __str__(self):
+        return f"{self.subject} для {self.group} в {self.day.name} {self.start_time}"

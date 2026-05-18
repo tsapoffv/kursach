@@ -3,7 +3,7 @@ import re
 from docx import Document
 from datetime import time
 from slugify import slugify
-from schedule.models import Group, Teacher, Classroom, Subject, Lesson, TimeSlot, GroupDenomination
+from schedule.models import Group, Teacher, Classroom, Subject, Lesson, TimeSlot, GroupDenomination, GroupDenominationType, WeekType, LessonType, DayOfWeek
 
 
 DAYS_ORDER = ['ПОНЕДЕЛЬНИК', 'ВТОРНИК', 'СРЕДА', 'ЧЕТВЕРГ', 'ПЯТНИЦА', 'СУББОТА']
@@ -64,6 +64,8 @@ def parse_docx_file(file_obj, clear: bool = False, group=None):
 
 def _parse_doc(doc: Document, group=None) -> dict:
     """Парсит документ docx"""
+    _ensure_enum_values()
+    
     schedule_table = find_schedule_table(doc)
     
     if not schedule_table:
@@ -152,6 +154,10 @@ def _parse_doc(doc: Document, group=None) -> dict:
 def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson_type_str, day, week_type, errors, time_str, denomination=None):
     """Создает занятие и возвращает количество созданных (0 или 1)"""
     subject, _ = Subject.objects.get_or_create(name=discipline)
+    
+    day_obj = _get_day(day)
+    week_type_obj = _get_week_type(week_type)
+    lesson_type_obj = _get_lesson_type(lesson_type_str)
 
     teacher = None
     if teacher_name:
@@ -179,14 +185,12 @@ def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson
                 classroom.slug = slug
                 classroom.save()
 
-    lesson_type = _parse_lesson_type(lesson_type_str)
-
     existing = Lesson.objects.filter(
         group=group,
         subject=subject,
         time_slot=time_slot,
-        day_of_week=day,
-        week_type=week_type,
+        day=day_obj,
+        week_type=week_type_obj,
         denomination=denomination
     ).first()
 
@@ -200,9 +204,9 @@ def _create_lesson(group, discipline, time_slot, teacher_name, room_name, lesson
             teacher=teacher,
             classroom=classroom,
             time_slot=time_slot,
-            day_of_week=day,
-            week_type=week_type,
-            lesson_type=lesson_type,
+            day=day_obj,
+            week_type=week_type_obj,
+            lesson_type=lesson_type_obj,
             denomination=denomination
         )
         return 1
@@ -376,19 +380,48 @@ def create_default_time_slots():
         )
 
 
-def _parse_lesson_type(text: str) -> str:
-    """Определяет тип занятия"""
+def _ensure_enum_values():
+    """Создает записи справочников если их нет"""
+    # WeekType
+    week_types = [('A', 'Неделя А (четн.)'), ('B', 'Неделя Б (неч.)'), ('BOTH', 'Обе недели')]
+    for code, name in week_types:
+        WeekType.objects.get_or_create(code=code, defaults={'name': name})
+    
+    # LessonType
+    lesson_types = [('LEC', 'Лекция'), ('PRA', 'Практика'), ('LAB', 'Лабораторная')]
+    for code, name in lesson_types:
+        LessonType.objects.get_or_create(code=code, defaults={'name': name})
+    
+    # DayOfWeek
+    days = [(1, 'Понедельник'), (2, 'Вторник'), (3, 'Среда'), (4, 'Четверг'), (5, 'Пятница'), (6, 'Суббота')]
+    for num, name in days:
+        DayOfWeek.objects.get_or_create(number=num, defaults={'name': name})
+    
+    # GroupDenominationType
+    denom_types = [('GROUP', 'Группа'), ('SUBGROUP', 'Подгруппа')]
+    for code, name in denom_types:
+        GroupDenominationType.objects.get_or_create(code=code, defaults={'name': name})
+
+
+def _get_week_type(code: str) -> WeekType | None:
+    return WeekType.objects.filter(code=code).first()
+
+
+def _get_lesson_type(text: str) -> LessonType | None:
     if not text:
-        return 'LEC'
+        return LessonType.objects.filter(code='LEC').first()
     
-    text_clean = re.sub(r'\s*\(.*?\)', '', text)
-    text_lower = text_clean.lower()
+    text_clean = re.sub(r'\s*\(.*?\)', '', text).lower()
     
-    if 'прак' in text_lower or 'семинар' in text_lower:
-        return 'PRA'
-    if 'лаб' in text_lower:
-        return 'LAB'
-    return 'LEC'
+    if 'прак' in text_clean or 'семинар' in text_clean:
+        return LessonType.objects.filter(code='PRA').first()
+    if 'лаб' in text_clean:
+        return LessonType.objects.filter(code='LAB').first()
+    return LessonType.objects.filter(code='LEC').first()
+
+
+def _get_day(number: int) -> DayOfWeek | None:
+    return DayOfWeek.objects.filter(number=number).first()
 
 
 def parse_all_tables_verbose(file_path: str):
